@@ -38,14 +38,14 @@ func TestAmountCreation(t *testing.T) {
 			expected: -MaxSatoshi,
 		},
 		{
-			name:     "exceeds max producible",
-			amount:   21e6 + 1e-8,
+			name:     "exceeds max producable",
+			amount:   21e6 + 1e-6, // ppc:
 			valid:    true,
 			expected: MaxSatoshi + 1,
 		},
 		{
-			name:     "exceeds min producible",
-			amount:   -21e6 - 1e-8,
+			name:     "exceeds min producable",
+			amount:   -21e6 - 1e-6, // ppc:
 			valid:    true,
 			expected: -MaxSatoshi - 1,
 		},
@@ -57,7 +57,7 @@ func TestAmountCreation(t *testing.T) {
 		},
 		{
 			name:     "fraction",
-			amount:   0.01234567,
+			amount:   1.234567,
 			valid:    true,
 			expected: 1234567,
 		},
@@ -119,56 +119,48 @@ func TestAmountUnitConversions(t *testing.T) {
 		s         string
 	}{
 		{
-			name:      "MBTC",
+			name:      "MPPC",
 			amount:    MaxSatoshi,
 			unit:      AmountMegaBTC,
 			converted: 21,
-			s:         "21 MBTC",
+			s:         "21 MPPC",
 		},
 		{
-			name:      "kBTC",
-			amount:    44433322211100,
+			name:      "kPPC",
+			amount:    444333222111, // ppc:
 			unit:      AmountKiloBTC,
 			converted: 444.33322211100,
-			s:         "444.333222111 kBTC",
+			s:         "444.333222111 kPPC",
 		},
 		{
-			name:      "BTC",
-			amount:    44433322211100,
+			name:      "PPC",
+			amount:    444333222111, // ppc:
 			unit:      AmountBTC,
 			converted: 444333.22211100,
-			s:         "444333.222111 BTC",
+			s:         "444333.222111 PPC",
 		},
 		{
-			name:      "mBTC",
-			amount:    44433322211100,
+			name:      "mPPC",
+			amount:    444333222111, // ppc:
 			unit:      AmountMilliBTC,
 			converted: 444333222.11100,
-			s:         "444333222.111 mBTC",
+			s:         "444333222.111 mPPC",
 		},
 		{
 
-			name:      "μBTC",
-			amount:    44433322211100,
+			name:      "μPPC",
+			amount:    444333222111, // ppc:
 			unit:      AmountMicroBTC,
 			converted: 444333222111.00,
-			s:         "444333222111 μBTC",
-		},
-		{
-
-			name:      "satoshi",
-			amount:    44433322211100,
-			unit:      AmountSatoshi,
-			converted: 44433322211100,
-			s:         "44433322211100 Satoshi",
+			s:         "444333222111 μPPC",
 		},
 		{
 
 			name:      "non-standard unit",
-			amount:    44433322211100,
+			amount:    444333222111, // ppc:
 			unit:      AmountUnit(-1),
 			converted: 4443332.2211100,
-			s:         "4443332.22111 1e-1 BTC",
+			s:         "4443332.22111 1e-1 PPC",
 		},
 	}
 
@@ -209,49 +201,49 @@ func TestAmountMulF64(t *testing.T) {
 		res  Amount
 	}{
 		{
-			name: "Multiply 0.1 BTC by 2",
+			name: "Multiply 0.1 PPC by 2",
 			amt:  100e5, // 0.1 BTC
 			mul:  2,
 			res:  200e5, // 0.2 BTC
 		},
 		{
-			name: "Multiply 0.2 BTC by 0.02",
+			name: "Multiply 0.2 PPC by 0.02",
 			amt:  200e5, // 0.2 BTC
 			mul:  1.02,
 			res:  204e5, // 0.204 BTC
 		},
 		{
-			name: "Multiply 0.1 BTC by -2",
+			name: "Multiply 0.1 PPC by -2",
 			amt:  100e5, // 0.1 BTC
 			mul:  -2,
 			res:  -200e5, // -0.2 BTC
 		},
 		{
-			name: "Multiply 0.2 BTC by -0.02",
+			name: "Multiply 0.2 PPC by -0.02",
 			amt:  200e5, // 0.2 BTC
 			mul:  -1.02,
 			res:  -204e5, // -0.204 BTC
 		},
 		{
-			name: "Multiply -0.1 BTC by 2",
+			name: "Multiply -0.1 PPC by 2",
 			amt:  -100e5, // -0.1 BTC
 			mul:  2,
 			res:  -200e5, // -0.2 BTC
 		},
 		{
-			name: "Multiply -0.2 BTC by 0.02",
+			name: "Multiply -0.2 PPC by 0.02",
 			amt:  -200e5, // -0.2 BTC
 			mul:  1.02,
 			res:  -204e5, // -0.204 BTC
 		},
 		{
-			name: "Multiply -0.1 BTC by -2",
+			name: "Multiply -0.1 PPC by -2",
 			amt:  -100e5, // -0.1 BTC
 			mul:  -2,
 			res:  200e5, // 0.2 BTC
 		},
 		{
-			name: "Multiply -0.2 BTC by -0.02",
+			name: "Multiply -0.2 PPC by -0.02",
 			amt:  -200e5, // -0.2 BTC
 			mul:  -1.02,
 			res:  204e5, // 0.204 BTC

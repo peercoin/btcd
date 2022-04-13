@@ -18,9 +18,9 @@ func ExampleAmount() {
 	a = btcutil.Amount(1e5)
 	fmt.Println("100,000 Satoshis:", a)
 	// Output:
-	// Zero Satoshi: 0 BTC
-	// 100,000,000 Satoshis: 1 BTC
-	// 100,000 Satoshis: 0.001 BTC
+	// Zero Satoshi: 0 PPC
+	// 100,000,000 Satoshis: 100 PPC
+	// 100,000 Satoshis: 0.1 PPC
 }
 
 func ExampleNewAmount() {
@@ -31,7 +31,7 @@ func ExampleNewAmount() {
 	}
 	fmt.Println(amountOne) //Output 1
 
-	amountFraction, err := btcutil.NewAmount(0.01234567)
+	amountFraction, err := btcutil.NewAmount(0.012345)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -52,10 +52,10 @@ func ExampleNewAmount() {
 	}
 	fmt.Println(amountNaN) //Output 4
 
-	// Output: 1 BTC
-	// 0.01234567 BTC
-	// 0 BTC
-	// invalid bitcoin amount
+	// Output: 1 PPC
+	// 0.012345 PPC
+	// 0 PPC
+	// invalid peercoin amount
 }
 
 func ExampleAmount_unitConversions() {
@@ -68,9 +68,9 @@ func ExampleAmount_unitConversions() {
 	fmt.Println("Satoshi to Satoshi:", amount.Format(btcutil.AmountSatoshi))
 
 	// Output:
-	// Satoshi to kBTC: 444.333222111 kBTC
-	// Satoshi to BTC: 444333.222111 BTC
-	// Satoshi to MilliBTC: 444333222.111 mBTC
-	// Satoshi to MicroBTC: 444333222111 μBTC
-	// Satoshi to Satoshi: 44433322211100 Satoshi
+	// Satoshi to kBTC: 44433.3222111 kPPC
+	// Satoshi to BTC: 44433322.2111 PPC
+	// Satoshi to MilliBTC: 44433322211.1 mPPC
+	// Satoshi to MicroBTC: 44433322211100 μPPC
+	// Satoshi to Satoshi: 44433322211100 μPPC
 }

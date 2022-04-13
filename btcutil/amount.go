@@ -27,6 +27,8 @@ const (
 	AmountSatoshi  AmountUnit = -6
 )
 
+const Base = 6
+
 // String returns the unit as a string.  For recognized units, the SI
 // prefix is used, or "Satoshi" for the base unit.  For all unrecognized
 // units, "1eN BTC" is returned, where N is the AmountUnit.
@@ -80,7 +82,7 @@ func NewAmount(f float64) (Amount, error) {
 	case math.IsInf(f, 1):
 		fallthrough
 	case math.IsInf(f, -1):
-		return 0, errors.New("invalid bitcoin amount")
+		return 0, errors.New("invalid peercoin amount")
 	}
 
 	return round(f * SatoshiPerBitcoin), nil
@@ -89,7 +91,7 @@ func NewAmount(f float64) (Amount, error) {
 // ToUnit converts a monetary amount counted in bitcoin base units to a
 // floating point value representing an amount of bitcoin.
 func (a Amount) ToUnit(u AmountUnit) float64 {
-	return float64(a) / math.Pow10(int(u+8))
+	return float64(a) / math.Pow10(int(u+Base))
 }
 
 // ToBTC is the equivalent of calling ToUnit with AmountBTC.
@@ -103,7 +105,7 @@ func (a Amount) ToBTC() float64 {
 // the units with SI notation, or "Satoshi" for the base unit.
 func (a Amount) Format(u AmountUnit) string {
 	units := " " + u.String()
-	return strconv.FormatFloat(a.ToUnit(u), 'f', -int(u+8), 64) + units
+	return strconv.FormatFloat(a.ToUnit(u), 'f', -int(u+Base), 64) + units
 }
 
 // String is the equivalent of calling Format with AmountBTC.

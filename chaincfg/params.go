@@ -268,20 +268,23 @@ type Params struct {
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType uint32
+	// Peercoin
+	StakeMinAge              int
+	InitialHashTargetBits    int
+	ModifierInterval         int
+	StakeModifierCheckpoints map[int64]uint32
 }
 
 // MainNetParams defines the network parameters for the main Bitcoin network.
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "8333",
+	DefaultPort: "9901",
 	DNSSeeds: []DNSSeed{
-		{"seed.bitcoin.sipa.be", true},
-		{"dnsseed.bluematt.me", true},
-		{"dnsseed.bitcoin.dashjr.org", false},
-		{"seed.bitcoinstats.com", true},
-		{"seed.bitnodes.io", false},
-		{"seed.bitcoin.jonasschnelli.ch", true},
+		{"seed.peercoin.net", false}, // TODO: Verify filtering from seed source
+		{"seed2.peercoin.net", false},
+		{"seed.peercoin-library.org", false},
+		{"seed.ppcoin.info", false},
 	},
 
 	// Chain parameters
@@ -289,45 +292,34 @@ var MainNetParams = Params{
 	GenesisHash:              &genesisHash,
 	PowLimit:                 mainPowLimit,
 	PowLimitBits:             0x1d00ffff,
-	BIP0034Height:            227931, // 000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8
-	BIP0065Height:            388381, // 000000000000000004c2b624ed5d7756c508d90fd0da2c7c679febfa6c4735f0
-	BIP0066Height:            363725, // 00000000000000000379eaa19dce8c9b722d46ae6a57c2f1a988119488b50931
+	BIP0034Height:            339994, // 000000000000000237f50af4cfe8924e8693abc5bd8ae5abb95bc6d230f5953f
+	BIP0065Height:            388381, // TODO: Verify BIP0065 activation height
+	BIP0066Height:            363725, // TODO: Verify BIP0066 activation height
 	CoinbaseMaturity:         100,
-	SubsidyReductionInterval: 210000,
-	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
+	SubsidyReductionInterval: 0,                  // TODO: Verify and Set to 0 to disable
+	TargetTimespan:           time.Hour * 24 * 7, // 7 Days
+	TargetTimePerBlock:       time.Minute * 10,   // 10 minutes
+	RetargetAdjustmentFactor: 4,                  // 25% less, 400% more
 	ReduceMinDifficulty:      false,
 	MinDiffReductionTime:     0,
 	GenerateSupported:        false,
 
 	// Checkpoints ordered from oldest to newest.
+	// https://github.com/peercoin/peercoin/blob/master/src/checkpoints.cpp#L39
 	Checkpoints: []Checkpoint{
-		{11111, newHashFromStr("0000000069e244f73d78e8fd29ba2fd2ed618bd6fa2ee92559f542fdb26e7c1d")},
-		{33333, newHashFromStr("000000002dd5588a74784eaa7ab0507a18ad16a236e7b1ce69f00d7ddfb5d0a6")},
-		{74000, newHashFromStr("0000000000573993a3c9e41ce34471c079dcf5f52a0e824a81e7f953b8661a20")},
-		{105000, newHashFromStr("00000000000291ce28027faea320c8d2b054b2e0fe44a773f3eefb151d6bdc97")},
-		{134444, newHashFromStr("00000000000005b12ffd4cd315cd34ffd4a594f430ac814c91184a0d42d2b0fe")},
-		{168000, newHashFromStr("000000000000099e61ea72015e79632f216fe6cb33d7899acb35b75c8303b763")},
-		{193000, newHashFromStr("000000000000059f452a5f7340de6682a977387c17010ff6e6c3bd83ca8b1317")},
-		{210000, newHashFromStr("000000000000048b95347e83192f69cf0366076336c639f9b7228e9ba171342e")},
-		{216116, newHashFromStr("00000000000001b4f4b433e81ee46494af945cf96014816a4e2370f11b23df4e")},
-		{225430, newHashFromStr("00000000000001c108384350f74090433e7fcf79a606b8e797f065b130575932")},
-		{250000, newHashFromStr("000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214")},
-		{267300, newHashFromStr("000000000000000a83fbd660e918f218bf37edd92b748ad940483c7c116179ac")},
-		{279000, newHashFromStr("0000000000000001ae8c72a0b0c301f67e3afca10e819efa9041e458e9bd7e40")},
-		{300255, newHashFromStr("0000000000000000162804527c6e9b9f0563a280525f9d08c12041def0a0f3b2")},
-		{319400, newHashFromStr("000000000000000021c6052e9becade189495d1c539aa37c58917305fd15f13b")},
-		{343185, newHashFromStr("0000000000000000072b8bf361d01a6ba7d445dd024203fafc78768ed4368554")},
-		{352940, newHashFromStr("000000000000000010755df42dba556bb72be6a32f3ce0b6941ce4430152c9ff")},
-		{382320, newHashFromStr("00000000000000000a8dc6ed5b133d0eb2fd6af56203e4159789b092defd8ab2")},
-		{400000, newHashFromStr("000000000000000004ec466ce4732fe6f1ed1cddc2ed4b328fff5224276e3f6f")},
-		{430000, newHashFromStr("000000000000000001868b2bb3a285f3cc6b33ea234eb70facf4dcdf22186b87")},
-		{460000, newHashFromStr("000000000000000000ef751bbce8e744ad303c47ece06c8d863e4d417efc258c")},
-		{490000, newHashFromStr("000000000000000000de069137b17b8d5a3dfbd5b145b2dcfb203f15d0c4de90")},
-		{520000, newHashFromStr("0000000000000000000d26984c0229c9f6962dc74db0a6d525f2f1640396f69c")},
-		{550000, newHashFromStr("000000000000000000223b7a2298fb1c6c75fb0efc28a4c56853ff4112ec6bc9")},
-		{560000, newHashFromStr("0000000000000000002c7b276daf6efb2b6aa68e2ce3be67ef925b3264ae7122")},
+		{0, newHashFromStr("0000000032fe677166d54963b62a4677d8957e87c508eaa4fd7eb1c880cd27e3")},
+		{19080, newHashFromStr("000000000000bca54d9ac17881f94193fd6a270c1bb21c3bf0b37f588a40dbd7")},
+		{30583, newHashFromStr("d39d1481a7eecba48932ea5913be58ad3894c7ee6d5a8ba8abeb772c66a6696e")},
+		{99999, newHashFromStr("27fd5e1de16a4270eb8c68dee2754a64da6312c7c3a0e99a7e6776246be1ee3f")},
+		{219999, newHashFromStr("ab0dad4b10d2370f009ed6df6effca1ba42f01d5070d6b30afeedf6463fbe7a2")},
+		{336000, newHashFromStr("4d261cef6e61a5ed8325e560f1d6e36f4698853a4c7134677f47a1d1d842bdf6")},
+		{371850, newHashFromStr("6b18adcb0a6e080dae85b74eee2b83fabb157bbea64fab0ed2192b2f6d5b89f3")},
+		{407813, newHashFromStr("00000000000000012730b0f48bed8afbeb08164c9d63597afb082e82ea05cec9")},
+		{443561, newHashFromStr("f81cea8e4e40b2cfcc13a8bd82436399c35a55df951b95e7128601c1838029ed")},
+		{455470, newHashFromStr("d1472c26229f90b8589d331aa47ba9023cb953b92dce342c753e7a6b3431bf1e")},
+		{479189, newHashFromStr("c9c065028b20a23fbb9627bbca5946c7497f11e1f72433d4d215c79047cf06f2")},
+		{504051, newHashFromStr("ff65454ebdf1d89174bec10a3c016db92f7b1d9a4759603472842f254be8d7b3")},
+		{589659, newHashFromStr("967c14abf21214639aeff0a270c4543cd3b80fe53178384ac5aa3c277662f1d0")},
 	},
 
 	// Consensus rule change deployments.
@@ -393,12 +385,12 @@ var MainNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "bc", // always bc for main net
+	Bech32HRPSegwit: "pc", // always pc for main net
 
 	// Address encoding magics
-	PubKeyHashAddrID:        0x00, // starts with 1
-	ScriptHashAddrID:        0x05, // starts with 3
-	PrivateKeyID:            0x80, // starts with 5 (uncompressed) or K (compressed)
+	PubKeyHashAddrID:        0x37, // TODO: starts with <value>
+	ScriptHashAddrID:        0x75, // TODO: starts with <value>
+	PrivateKeyID:            0xb7, // TODO: starts with <value> and compressed <value>
 	WitnessPubKeyHashAddrID: 0x06, // starts with p2
 	WitnessScriptHashAddrID: 0x0A, // starts with 7Xh
 
@@ -409,6 +401,22 @@ var MainNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 0,
+
+	//Peercoin Specific Parameters
+	StakeMinAge:           60 * 60 * 24 * 30, // 30-days minimum age for coin-age
+	InitialHashTargetBits: 0x1c0fffff,        // initial difficulty target bits
+	ModifierInterval:      6 * 60 * 60,       // 6 hours for production network and 20 minutes for testnet
+	StakeModifierCheckpoints: map[int64]uint32{
+		0:      uint32(0x0e00670b),
+		19080:  uint32(0xad4e4d29),
+		30583:  uint32(0xdc7bf136),
+		99999:  uint32(0xf555cfd2),
+		219999: uint32(0x91b7444d),
+		336000: uint32(0x6c3c8048),
+		371850: uint32(0x9b850bdf),
+		407813: uint32(0x46fe50b5),
+		420000: uint32(0xc1c89fa6),
+	},
 }
 
 // RegressionNetParams defines the network parameters for the regression test

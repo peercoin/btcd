@@ -172,109 +172,6 @@ func checkPkScriptStandard(pkScript []byte, scriptClass txscript.ScriptClass) er
 	return nil
 }
 
-// GetDustThreshold calculates the dust limit for a *wire.TxOut by taking the
-// size of a typical spending transaction and multiplying it by 3 to account
-// for the minimum dust relay fee of 3000sat/kvb.
-func GetDustThreshold(txOut *wire.TxOut) int64 {
-	// The total serialized size consists of the output and the associated
-	// input script to redeem it.  Since there is no input script
-	// to redeem it yet, use the minimum size of a typical input script.
-	//
-	// Pay-to-pubkey-hash bytes breakdown:
-	//
-	//  Output to hash (34 bytes):
-	//   8 value, 1 script len, 25 script [1 OP_DUP, 1 OP_HASH_160,
-	//   1 OP_DATA_20, 20 hash, 1 OP_EQUALVERIFY, 1 OP_CHECKSIG]
-	//
-	//  Input with compressed pubkey (148 bytes):
-	//   36 prev outpoint, 1 script len, 107 script [1 OP_DATA_72, 72 sig,
-	//   1 OP_DATA_33, 33 compressed pubkey], 4 sequence
-	//
-	//  Input with uncompressed pubkey (180 bytes):
-	//   36 prev outpoint, 1 script len, 139 script [1 OP_DATA_72, 72 sig,
-	//   1 OP_DATA_65, 65 compressed pubkey], 4 sequence
-	//
-	// Pay-to-pubkey bytes breakdown:
-	//
-	//  Output to compressed pubkey (44 bytes):
-	//   8 value, 1 script len, 35 script [1 OP_DATA_33,
-	//   33 compressed pubkey, 1 OP_CHECKSIG]
-	//
-	//  Output to uncompressed pubkey (76 bytes):
-	//   8 value, 1 script len, 67 script [1 OP_DATA_65, 65 pubkey,
-	//   1 OP_CHECKSIG]
-	//
-	//  Input (114 bytes):
-	//   36 prev outpoint, 1 script len, 73 script [1 OP_DATA_72,
-	//   72 sig], 4 sequence
-	//
-	// Pay-to-witness-pubkey-hash bytes breakdown:
-	//
-	//  Output to witness key hash (31 bytes);
-	//   8 value, 1 script len, 22 script [1 OP_0, 1 OP_DATA_20,
-	//   20 bytes hash160]
-	//
-	//  Input (67 bytes as the 107 witness stack is discounted):
-	//   36 prev outpoint, 1 script len, 0 script (not sigScript), 107
-	//   witness stack bytes [1 element length, 33 compressed pubkey,
-	//   element length 72 sig], 4 sequence
-	//
-	//
-	// Theoretically this could examine the script type of the output script
-	// and use a different size for the typical input script size for
-	// pay-to-pubkey vs pay-to-pubkey-hash inputs per the above breakdowns,
-	// but the only combination which is less than the value chosen is
-	// a pay-to-pubkey script with a compressed pubkey, which is not very
-	// common.
-	//
-	// The most common scripts are pay-to-pubkey-hash, and as per the above
-	// breakdown, the minimum size of a p2pkh input script is 148 bytes.  So
-	// that figure is used. If the output being spent is a witness program,
-	// then we apply the witness discount to the size of the signature.
-	//
-	// The segwit analogue to p2pkh is a p2wkh output. This is the smallest
-	// output possible using the new segwit features. The 107 bytes of
-	// witness data is discounted by a factor of 4, leading to a computed
-	// value of 67 bytes of witness data.
-	//
-	// Both cases share a 41 byte preamble required to reference the input
-	// being spent and the sequence number of the input.
-	totalSize := txOut.SerializeSize() + 41
-	if txscript.IsWitnessProgram(txOut.PkScript) {
-		totalSize += (107 / blockchain.WitnessScaleFactor)
-	} else {
-		totalSize += 107
-	}
-
-	return 3 * int64(totalSize)
-}
-
-// IsDust returns whether or not the passed transaction output amount is
-// considered dust or not based on the passed minimum transaction relay fee.
-// Dust is defined in terms of the minimum transaction relay fee.  In
-// particular, if the cost to the network to spend coins is more than 1/3 of the
-// minimum transaction relay fee, it is considered dust.
-func IsDust(txOut *wire.TxOut, minRelayTxFee btcutil.Amount) bool {
-	// Unspendable outputs are considered dust.
-	if txscript.IsUnspendable(txOut.PkScript) {
-		return true
-	}
-
-	// The output is considered dust if the cost to the network to spend the
-	// coins is more than 1/3 of the minimum free transaction relay fee.
-	// minFreeTxRelayFee is in Satoshi/KB, so multiply by 1000 to
-	// convert to bytes.
-	//
-	// Using the typical values for a pay-to-pubkey-hash transaction from
-	// the breakdown above and the default minimum free transaction relay
-	// fee of 1000, this equates to values less than 546 satoshi being
-	// considered dust.
-	//
-	// The following is equivalent to (value/totalSize) * (1/3) * 1000
-	// without needing to do floating point math.
-	return txOut.Value*1000/GetDustThreshold(txOut) < int64(minRelayTxFee)
-}
-
 // CheckTransactionStandard performs a series of checks on a transaction to
 // ensure it is a "standard" transaction.  A standard transaction is one that
 // conforms to several additional limiting cases over what is considered a
@@ -283,8 +180,7 @@ func IsDust(txOut *wire.TxOut, minRelayTxFee btcutil.Amount) bool {
 // of recognized forms, and not containing "dust" outputs (those that are
 // so small it costs more to process them than they are worth).
 func CheckTransactionStandard(tx *btcutil.Tx, height int32,
-	medianTimePast time.Time, minRelayTxFee btcutil.Amount,
-	maxTxVersion int32) error {
+	medianTimePast time.Time, maxTxVersion int32) error {
 
 	// The transaction must be a currently supported version.
 	msgTx := tx.MsgTx()
@@ -358,10 +254,6 @@ func CheckTransactionStandard(tx *btcutil.Tx, height int32,
 		// "dust".
 		if scriptClass == txscript.NullDataTy {
 			numNullDataOutputs++
-		} else if IsDust(txOut, minRelayTxFee) {
-			str := fmt.Sprintf("transaction output %d: payment "+
-				"of %d is dust", i, txOut.Value)
-			return txRuleError(wire.RejectDust, str)
 		}
 	}
 

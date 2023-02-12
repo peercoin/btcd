@@ -39,6 +39,8 @@ type Block struct {
 	blockHeight              int32           // Height in the main block chain
 	transactions             []*Tx           // Transactions
 	txnsGenerated            bool            // ALL wrapped transactions generated
+	meta                     *wire.Meta      // peercoin block meta data
+	serializedMeta           []byte          // peercoin serialized bytes for the block meta
 }
 
 // MsgBlock returns the underlying wire.MsgBlock for the Block.
@@ -130,10 +132,16 @@ func (b *Block) Tx(txNum int) (*Tx, error) {
 		return b.transactions[txNum], nil
 	}
 
+	// peercoin: extract tx offsets if needed
+	if b.Meta().TxOffsets == nil {
+		b.TxLoc()
+	}
+
 	// Generate and cache the wrapped transaction and return it.
 	newTx := NewTx(b.msgBlock.Transactions[txNum])
 	newTx.SetIndex(txNum)
 	b.transactions[txNum] = newTx
+	newTx.SetOffset(b.Meta().TxOffsets[txNum]) // peercoin
 	return newTx, nil
 }
 
@@ -154,12 +162,23 @@ func (b *Block) Transactions() []*Tx {
 		b.transactions = make([]*Tx, len(b.msgBlock.Transactions))
 	}
 
+	// peercoin: extract tx offsets if needed
+	if b.Meta().TxOffsets == nil {
+		b.TxLoc()
+	} else if len(b.Meta().TxOffsets) != len(b.transactions) {
+		// peercoin: bug seems to have been fix, keeping log just in case
+		fmt.Printf("ERROR: Hash: %v, Nb Tx (%v) != Nb Offsets (%v)\n",
+			b.Hash(), len(b.msgBlock.Transactions), len(b.Meta().TxOffsets))
+		b.TxLoc()
+	}
+
 	// Generate and cache the wrapped transactions for all that haven't
 	// already been done.
 	for i, tx := range b.transactions {
 		if tx == nil {
 			newTx := NewTx(b.msgBlock.Transactions[i])
 			newTx.SetIndex(i)
+			newTx.SetOffset(b.Meta().TxOffsets[i]) // peercoin:
 			b.transactions[i] = newTx
 		}
 	}
@@ -202,6 +221,16 @@ func (b *Block) TxLoc() ([]wire.TxLoc, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// peercoin: initializing meta offsets
+	b.meta.TxOffsets = make([]uint32, len(txLocs))
+	for i, txLoc := range txLocs {
+		// todo ppc offsets are advanced by 4
+		//   until this issue is resolved i'm moving the tx offset back by 4 manually so that the
+		//   stored data still works as intended
+		b.meta.TxOffsets[i] = uint32(txLoc.TxStart) - 4
+	}
+
 	return txLocs, err
 }
 

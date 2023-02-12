@@ -114,6 +114,9 @@ func (b *BlockChain) processOrphans(hash *chainhash.Hash, flags BehaviorFlags) e
 			b.removeOrphanBlock(orphan)
 			i--
 
+			// peercoin: processing
+			b.ppcOrphanBlockRemoved(orphan.block)
+
 			// Potentially accept the block into the block chain.
 			_, err := b.maybeAcceptBlock(orphan.block, flags)
 			if err != nil {
@@ -143,7 +146,8 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 
-	fastAdd := flags&BFFastAdd == BFFastAdd
+	// todo ppc
+	// fastAdd := flags&BFFastAdd == BFFastAdd
 
 	blockHash := block.Hash()
 	log.Tracef("Processing block %v", blockHash)
@@ -164,8 +168,14 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 		return false, false, ruleError(ErrDuplicateBlock, str)
 	}
 
+	// peercoin: processing
+	ppcErr := b.ppcProcessBlock(block, phasePreSanity)
+	if ppcErr != nil {
+		return false, false, ppcErr
+	}
+
 	// Perform preliminary sanity checks on the block and its transactions.
-	err = checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
+	err = checkBlockSanity(block, b.chainParams, b.timeSource, flags)
 	if err != nil {
 		return false, false, err
 	}
@@ -190,24 +200,27 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 				blockHeader.Timestamp, checkpointTime)
 			return false, false, ruleError(ErrCheckpointTimeTooOld, str)
 		}
-		if !fastAdd {
-			// Even though the checks prior to now have already ensured the
-			// proof of work exceeds the claimed amount, the claimed amount
-			// is a field in the block header which could be forged.  This
-			// check ensures the proof of work is at least the minimum
-			// expected based on elapsed time since the last checkpoint and
-			// maximum adjustment allowed by the retarget rules.
-			duration := blockHeader.Timestamp.Sub(checkpointTime)
-			requiredTarget := CompactToBig(b.calcEasiestDifficulty(
-				checkpointNode.bits, duration))
-			currentTarget := CompactToBig(blockHeader.Bits)
-			if currentTarget.Cmp(requiredTarget) > 0 {
-				str := fmt.Sprintf("block target difficulty of %064x "+
-					"is too low when compared to the previous "+
-					"checkpoint", currentTarget)
-				return false, false, ruleError(ErrDifficultyTooLow, str)
+		/*
+			if !fastAdd {
+				// todo ppc
+				// Even though the checks prior to now have already ensured the
+				// proof of work exceeds the claimed amount, the claimed amount
+				// is a field in the block header which could be forged.  This
+				// check ensures the proof of work is at least the minimum
+				// expected based on elapsed time since the last checkpoint and
+				// maximum adjustment allowed by the retarget rules.
+				duration := blockHeader.Timestamp.Sub(checkpointTime)
+				requiredTarget := CompactToBig(b.calcEasiestDifficulty(
+					checkpointNode.bits, duration))
+				currentTarget := CompactToBig(blockHeader.Bits)
+				if currentTarget.Cmp(requiredTarget) > 0 {
+					str := fmt.Sprintf("block target difficulty of %064x "+
+						"is too low when compared to the previous "+
+						"checkpoint", currentTarget)
+					return false, false, ruleError(ErrDifficultyTooLow, str)
+				}
 			}
-		}
+		*/
 	}
 
 	// Handle orphan blocks.
@@ -217,6 +230,12 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 		return false, false, err
 	}
 	if !prevHashExists {
+		// peercoin: processing
+		ppcErr := b.ppcProcessOrphan(block)
+		if ppcErr != nil {
+			// todo ppc check return
+			return false, true, ppcErr
+		}
 		log.Infof("Adding orphan block %v with parent %v", blockHash, prevHash)
 		b.addOrphanBlock(block)
 
@@ -239,6 +258,15 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	}
 
 	log.Debugf("Accepted block %v", blockHash)
+
+	/* todo ppc add
+	   if (pindex->IsProofOfStake() && !ActiveChainstate().IsInitialBlockDownload()) {
+	       int32_t ndx = univHash(pindex->hashProofOfStake);
+	       if (fPoSDuplicate && vStakeSeen[ndx] == pindex->hashProofOfStake)
+	           *fPoSDuplicate = true;
+	       vStakeSeen[ndx] = pindex->hashProofOfStake;
+	   }
+	*/
 
 	return isMainChain, false, nil
 }

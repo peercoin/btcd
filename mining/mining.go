@@ -297,7 +297,8 @@ func spendTransaction(utxoView *blockchain.UtxoViewpoint, tx *btcutil.Tx, height
 		}
 	}
 
-	utxoView.AddTxOuts(tx, height)
+	var timestamp time.Time // todo ppc replace dummy
+	utxoView.AddTxOuts(tx, height, timestamp, timestamp)
 	return nil
 }
 
@@ -509,7 +510,7 @@ mempoolLoop:
 		// A block can't have more than one coinbase or contain
 		// non-finalized transactions.
 		tx := txDesc.Tx
-		if blockchain.IsCoinBase(tx) {
+		if blockchain.IsCoinBase(tx) { // todo ppc IsCoinStake()
 			log.Tracef("Skipping coinbase tx %s", tx.Hash())
 			continue
 		}
@@ -606,11 +607,13 @@ mempoolLoop:
 	// so then this means that we'll include any transactions with witness
 	// data in the mempool, and also add the witness commitment as an
 	// OP_RETURN output in the coinbase transaction.
-	segwitState, err := g.chain.ThresholdState(chaincfg.DeploymentSegwit)
-	if err != nil {
-		return nil, err
-	}
-	segwitActive := segwitState == blockchain.ThresholdActive
+	/*
+		segwitState, err := g.chain.ThresholdState(chaincfg.DeploymentSegwit)
+		if err != nil {
+			return nil, err
+		}
+	*/
+	segwitActive := blockchain.IsBTC16BIPsEnabled(g.chainParams, time.Now().Unix())
 
 	witnessIncluded := false
 
@@ -739,8 +742,8 @@ mempoolLoop:
 
 		// Ensure the transaction inputs pass all of the necessary
 		// preconditions before allowing it to be added to the block.
-		_, err = blockchain.CheckTransactionInputs(tx, nextBlockHeight,
-			blockUtxos, g.chainParams)
+		_, err = blockchain.CheckTransactionInputs(tx, nextBlockHeight, time.Now().Unix(),
+			blockUtxos, 0, g.chainParams) // todo ppc fetch moneySupply could be from beststate or chaintip
 		if err != nil {
 			log.Tracef("Skipping tx %s due to error in "+
 				"CheckTransactionInputs: %v", tx.Hash(), err)
@@ -817,15 +820,17 @@ mempoolLoop:
 
 	// Calculate the next expected block version based on the state of the
 	// rule change deployments.
+	/*todo ppc
 	nextBlockVersion, err := g.chain.CalcNextBlockVersion()
 	if err != nil {
 		return nil, err
 	}
+	*/
 
 	// Create a new block ready to be solved.
 	var msgBlock wire.MsgBlock
 	msgBlock.Header = wire.BlockHeader{
-		Version:    nextBlockVersion,
+		Version:    1, // todo ppc
 		PrevBlock:  best.Hash,
 		MerkleRoot: blockchain.CalcMerkleRoot(blockTxns, false),
 		Timestamp:  ts,

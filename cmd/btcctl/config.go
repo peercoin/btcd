@@ -27,10 +27,10 @@ const (
 )
 
 var (
-	btcdHomeDir           = btcutil.AppDataDir("btcd", false)
-	btcctlHomeDir         = btcutil.AppDataDir("btcctl", false)
-	btcwalletHomeDir      = btcutil.AppDataDir("btcwallet", false)
-	defaultConfigFile     = filepath.Join(btcctlHomeDir, "btcctl.conf")
+	btcdHomeDir           = btcutil.AppDataDir("ppcd", false)
+	btcctlHomeDir         = btcutil.AppDataDir("ppcctl", false)
+	btcwalletHomeDir      = btcutil.AppDataDir("ppcwallet", false)
+	defaultConfigFile     = filepath.Join(btcctlHomeDir, "ppcctl.conf")
 	defaultRPCServer      = "localhost"
 	defaultRPCCertFile    = filepath.Join(btcdHomeDir, "rpc.cert")
 	defaultWalletCertFile = filepath.Join(btcwalletHomeDir, "rpc.cert")
@@ -121,6 +121,7 @@ func normalizeAddress(addr string, chain *chaincfg.Params, useWallet bool) (stri
 		switch chain {
 		case &chaincfg.TestNet3Params:
 			if useWallet {
+				// todo ppc
 				defaultPort = "18332"
 			} else {
 				defaultPort = "18334"
@@ -134,7 +135,7 @@ func normalizeAddress(addr string, chain *chaincfg.Params, useWallet bool) (stri
 		case &chaincfg.RegressionNetParams:
 			if useWallet {
 				// TODO: add port once regtest is supported in btcwallet
-				paramErr := fmt.Errorf("cannot use -wallet with -regtest, btcwallet not yet compatible with regtest")
+				paramErr := fmt.Errorf("cannot use -wallet with -regtest, ppcwallet not yet compatible with regtest")
 				return "", paramErr
 			} else {
 				defaultPort = "18334"
@@ -231,9 +232,9 @@ func loadConfig() (*config, []string, error) {
 		// Use config file for RPC server to create default btcctl config
 		var serverConfigPath string
 		if preCfg.Wallet {
-			serverConfigPath = filepath.Join(btcwalletHomeDir, "btcwallet.conf")
+			serverConfigPath = filepath.Join(btcwalletHomeDir, "ppcwallet.conf")
 		} else {
-			serverConfigPath = filepath.Join(btcdHomeDir, "btcd.conf")
+			serverConfigPath = filepath.Join(btcdHomeDir, "ppcd.conf")
 		}
 
 		err := createDefaultConfigFile(preCfg.ConfigFile, serverConfigPath)

@@ -265,11 +265,14 @@ func (sm *SyncManager) startSync() {
 	// Once the segwit soft-fork package has activated, we only
 	// want to sync from peers which are witness enabled to ensure
 	// that we fully validate all blockchain data.
+	/* todo ppc
 	segwitActive, err := sm.chain.IsDeploymentActive(chaincfg.DeploymentSegwit)
 	if err != nil {
 		log.Errorf("Unable to query for segwit soft-fork state: %v", err)
 		return
 	}
+	*/
+	segwitActive := blockchain.IsBTC16BIPsEnabled(sm.chainParams, time.Now().Unix())
 
 	best := sm.chain.BestSnapshot()
 	var higherPeers, equalPeers []*peerpkg.Peer
@@ -357,6 +360,8 @@ func (sm *SyncManager) startSync() {
 		// and fully validate them.  Finally, regression test mode does
 		// not support the headers-first approach so do normal block
 		// downloads when in regression test mode.
+		// todo ppc disabled headers first because we don't support the encoding yet
+		// todo ppc support added for now but probably incomplete
 		if sm.nextCheckpoint != nil &&
 			best.Height < sm.nextCheckpoint.Height &&
 			sm.chainParams != &chaincfg.RegressionNetParams {
@@ -401,11 +406,14 @@ func (sm *SyncManager) isSyncCandidate(peer *peerpkg.Peer) bool {
 		// The peer is not a candidate for sync if it's not a full
 		// node. Additionally, if the segwit soft-fork package has
 		// activated, then the peer must also be upgraded.
+		/* todo ppc
 		segwitActive, err := sm.chain.IsDeploymentActive(chaincfg.DeploymentSegwit)
 		if err != nil {
 			log.Errorf("Unable to query for segwit "+
 				"soft-fork state: %v", err)
 		}
+		*/
+		segwitActive := blockchain.IsBTC16BIPsEnabled(sm.chainParams, time.Now().Unix())
 		nodeServices := peer.Services()
 		if nodeServices&wire.SFNodeNetwork != wire.SFNodeNetwork ||
 			(segwitActive && !peer.IsWitnessEnabled()) {
@@ -689,7 +697,8 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
 		if firstNodeEl != nil {
 			firstNode := firstNodeEl.Value.(*headerNode)
 			if blockHash.IsEqual(firstNode.hash) {
-				behaviorFlags |= blockchain.BFFastAdd
+				// todo ppc
+				// behaviorFlags |= blockchain.BFFastAdd
 				if firstNode.hash.IsEqual(sm.nextCheckpoint.Hash) {
 					isCheckpointBlock = true
 				} else {
@@ -936,13 +945,40 @@ func (sm *SyncManager) handleHeadersMsg(hmsg *headersMsg) {
 		return
 	}
 
+	nPoSTemperature := peerpkg.GetMapPos()[peer.Addr()] // todo ppc
+	nTmpPoSTemperature := nPoSTemperature
+
 	// Process all of the received headers ensuring each one connects to the
 	// previous and that checkpoints match.
 	receivedCheckpoint := false
 	var finalHash *chainhash.Hash
-	for _, blockHeader := range msg.Headers {
+	for i, blockHeader := range msg.Headers {
 		blockHash := blockHeader.BlockHash()
 		finalHash = &blockHash
+
+		fPoS := (blockHeader.Flags & blockchain.FBlockProofOfStake) > 0
+		if fPoS {
+			nTmpPoSTemperature++
+		} else {
+			nTmpPoSTemperature -= wire.PoWHeaderCooling
+		}
+
+		if i == 0 && fPoS == false && msg.Headers[i].PrevBlock != peer.LastAcceptedHeader() {
+			nTmpPoSTemperature += wire.PoWHeaderCooling
+		}
+
+		if nTmpPoSTemperature < 0 {
+			nTmpPoSTemperature = 0
+		}
+		if nTmpPoSTemperature >= wire.MaxConsecutivePoSHeaders {
+			nPoSTemperature = (wire.MaxConsecutivePoSHeaders * 3) / 4
+			peerpkg.SetMapPos(peer.Addr(), nPoSTemperature) // todo ppc
+			if sm.chainParams != &chaincfg.TestNet3Params {
+				log.Warnf("too many consecutive pos headers") // todo ppc more detailed warning
+				peer.Disconnect()
+				return
+			}
+		}
 
 		// Ensure there is a previous header to compare against.
 		prevNodeEl := sm.headerList.Back()
@@ -990,6 +1026,7 @@ func (sm *SyncManager) handleHeadersMsg(hmsg *headersMsg) {
 			}
 			break
 		}
+		peer.UpdateLastAcceptedHeader(prevNode.hash) // todo ppc this is updated per batch and later upstream
 	}
 
 	// When this header is a checkpoint, switch to fetching the blocks for
@@ -1343,6 +1380,31 @@ out:
 					peerID = sm.syncPeer.ID()
 				}
 				msg.reply <- peerID
+
+			/* todo ppc
+			case getKernelStakeModifierMsg: // peercoin:
+				stakeModifier, err := b.blockChain.GetKernelStakeModifier(
+					msg.hash, msg.timeSource)
+				msg.reply <- getKernelStakeModifierResponse{
+					StakeModifier: stakeModifier,
+					err:           err,
+				}
+
+			case ppcCalcNextReqDifficultyMsg: // peercoin:
+				difficulty, err :=
+					b.blockChain.PPCCalcNextRequiredDifficulty(msg.proofOfStake)
+				msg.reply <- ppcCalcNextReqDifficultyResponse{
+					difficulty: difficulty,
+					err:        err,
+				}
+
+			case ppcGetLastProofOfWorkRewardMsg: // peercoin:
+				subsidy := b.blockChain.PPCGetLastProofOfWorkReward()
+				msg.reply <- ppcGetLastProofOfWorkRewardResponse{
+					subsidy: subsidy,
+					err:     nil,
+				}
+			*/
 
 			case processBlockMsg:
 				_, isOrphan, err := sm.chain.ProcessBlock(

@@ -108,6 +108,7 @@ func (bi *blockImporter) readBlock() ([]byte, error) {
 // NOTE: This is not a safe import as it does not verify chain rules.
 func (bi *blockImporter) processBlock(serializedBlock []byte) (bool, error) {
 	// Deserialize the block which includes checks for malformed blocks.
+	// todo ppc we don't have any access to the block meta
 	block, err := btcutil.NewBlockFromBytes(serializedBlock)
 	if err != nil {
 		return false, err
@@ -371,6 +372,8 @@ func (cmd *importCmd) Execute(args []string) error {
 	// goroutine must be kept running long enough for the interrupt handler
 	// goroutine to finish.
 	go func() {
+		log.Infof("Peercoin: Not supported")
+		return
 		log.Info("Starting import")
 		resultsChan := importer.Import()
 		results := <-resultsChan

@@ -100,7 +100,7 @@ var (
 
 // masterKey is the master key used along with a random seed used to generate
 // the master node in the hierarchical tree.
-var masterKey = []byte("Bitcoin seed")
+var masterKey = []byte("Peercoin seed")
 
 // ExtendedKey houses all the information needed to support a hierarchical
 // deterministic extended key.  See the package overview documentation for

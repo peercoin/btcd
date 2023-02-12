@@ -50,10 +50,11 @@ func shallowCopyTx(tx *wire.MsgTx) wire.MsgTx {
 	// pointers into the contiguous arrays.  This avoids a lot of small
 	// allocations.
 	txCopy := wire.MsgTx{
-		Version:  tx.Version,
-		TxIn:     make([]*wire.TxIn, len(tx.TxIn)),
-		TxOut:    make([]*wire.TxOut, len(tx.TxOut)),
-		LockTime: tx.LockTime,
+		Version:   tx.Version,
+		Timestamp: tx.Timestamp,
+		TxIn:      make([]*wire.TxIn, len(tx.TxIn)),
+		TxOut:     make([]*wire.TxOut, len(tx.TxOut)),
+		LockTime:  tx.LockTime,
 	}
 	txIns := make([]wire.TxIn, len(tx.TxIn))
 	for i, oldTxIn := range tx.TxIn {
@@ -205,6 +206,12 @@ func calcWitnessSignatureHashRaw(subScript []byte, sigHashes *TxSigHashes,
 	var bVersion [4]byte
 	binary.LittleEndian.PutUint32(bVersion[:], uint32(tx.Version))
 	sigHash.Write(bVersion[:])
+
+	if tx.Version < 3 {
+		var bTime [4]byte
+		binary.LittleEndian.PutUint32(bTime[:], uint32(tx.Timestamp.Unix()))
+		sigHash.Write(bTime[:])
+	}
 
 	// Next write out the possibly pre-calculated hashes for the sequence
 	// numbers of all inputs, and the hashes of the previous outs for all
@@ -469,6 +476,12 @@ func calcTaprootSignatureHashRaw(sigHashes *TxSigHashes, hType SigHashType,
 	err := binary.Write(&sigMsg, binary.LittleEndian, tx.Version)
 	if err != nil {
 		return nil, err
+	}
+	if tx.Version < 3 {
+		err = binary.Write(&sigMsg, binary.LittleEndian, tx.Timestamp)
+		if err != nil {
+			return nil, err
+		}
 	}
 	err = binary.Write(&sigMsg, binary.LittleEndian, tx.LockTime)
 	if err != nil {

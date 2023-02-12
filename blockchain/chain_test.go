@@ -128,10 +128,11 @@ func TestCalcSequenceLock(t *testing.T) {
 	chain := newFakeChain(netParams)
 	node := chain.bestChain.Tip()
 	blockTime := node.Header().Timestamp
+	blockMeta := node.meta
 	numBlocksToActivate := (netParams.MinerConfirmationWindow * 3)
 	for i := uint32(0); i < numBlocksToActivate; i++ {
 		blockTime = blockTime.Add(time.Second)
-		node = newFakeNode(node, blockVersion, 0, blockTime)
+		node = newFakeNode(node, blockVersion, blockMeta, 0, blockTime)
 		chain.index.AddNode(node)
 		chain.bestChain.SetTip(node)
 	}
@@ -146,7 +147,7 @@ func TestCalcSequenceLock(t *testing.T) {
 		}},
 	})
 	utxoView := NewUtxoViewpoint()
-	utxoView.AddTxOuts(targetTx, int32(numBlocksToActivate)-4)
+	utxoView.AddTxOuts(targetTx, int32(numBlocksToActivate)-4, blockTime, time.Time{}) // todo ppc set time
 	utxoView.SetBestHash(&node.hash)
 
 	// Create a utxo that spends the fake utxo created above for use in the
@@ -187,7 +188,7 @@ func TestCalcSequenceLock(t *testing.T) {
 
 	// Adding a utxo with a height of 0x7fffffff indicates that the output
 	// is currently unmined.
-	utxoView.AddTxOuts(btcutil.NewTx(unConfTx), 0x7fffffff)
+	utxoView.AddTxOuts(btcutil.NewTx(unConfTx), 0x7fffffff, blockTime, time.Time{}) // todo ppc set time
 
 	tests := []struct {
 		tx      *wire.MsgTx

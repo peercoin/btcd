@@ -13,9 +13,9 @@ import (
 )
 
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
-// Version 4 bytes + Timestamp 4 bytes + Bits 4 bytes + Nonce 4 bytes +
+// Version 4 bytes + Timestamp 4 bytes + Bits 4 bytes + Nonce 4 bytes + Flags 4 bytes +
 // PrevBlock and MerkleRoot hashes.
-const MaxBlockHeaderPayload = 16 + (chainhash.HashSize * 2)
+const MaxBlockHeaderPayload = 20 + (chainhash.HashSize * 2) // todo ppc verify
 
 // BlockHeader defines information about a block and is used in the bitcoin
 // block (MsgBlock) and headers (MsgHeaders) messages.
@@ -38,11 +38,15 @@ type BlockHeader struct {
 
 	// Nonce used to generate the block.
 	Nonce uint32
+
+	// peercoin: proof-of-stake related block index fields.
+	// todo ppc re-check
+	Flags uint32
 }
 
 // blockHeaderLen is a constant that represents the number of bytes for a block
 // header.
-const blockHeaderLen = 80
+const blockHeaderLen = 80 // todo ppc verify
 
 // BlockHash computes the block identifier hash for the given block header.
 func (h *BlockHeader) BlockHash() chainhash.Hash {
@@ -51,7 +55,7 @@ func (h *BlockHeader) BlockHash() chainhash.Hash {
 	// encode could fail except being out of memory which would cause a
 	// run-time panic.
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	_ = writeBlockHeader(buf, 0, h)
+	_ = writeBlockHeader(buf, 0, h, false)
 
 	return chainhash.DoubleHashH(buf.Bytes())
 }
@@ -69,7 +73,7 @@ func (h *BlockHeader) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) e
 // See Serialize for encoding block headers to be stored to disk, such as in a
 // database, as opposed to encoding block headers for the wire.
 func (h *BlockHeader) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error {
-	return writeBlockHeader(w, pver, h)
+	return writeBlockHeader(w, pver, h, true)
 }
 
 // Deserialize decodes a block header from r into the receiver using a format
@@ -89,14 +93,14 @@ func (h *BlockHeader) Serialize(w io.Writer) error {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of writeBlockHeader.
-	return writeBlockHeader(w, 0, h)
+	return writeBlockHeader(w, 0, h, true)
 }
 
 // NewBlockHeader returns a new BlockHeader using the provided version, previous
 // block hash, merkle root hash, difficulty bits, and nonce used to generate the
 // block with defaults for the remaining fields.
 func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
-	bits uint32, nonce uint32) *BlockHeader {
+	bits uint32, nonce uint32, flags uint32) *BlockHeader {
 
 	// Limit the timestamp to one second precision since the protocol
 	// doesn't support better.
@@ -107,6 +111,7 @@ func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
 		Timestamp:  time.Unix(time.Now().Unix(), 0),
 		Bits:       bits,
 		Nonce:      nonce,
+		Flags:      flags,
 	}
 }
 
@@ -115,14 +120,22 @@ func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
 // decoding from the wire.
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		(*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce)
+		(*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce, &bh.Flags)
 }
 
 // writeBlockHeader writes a bitcoin block header to w.  See Serialize for
 // encoding block headers to be stored to disk, such as in a database, as
 // opposed to encoding for the wire.
-func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
+func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader, sFlag bool) error {
 	sec := uint32(bh.Timestamp.Unix())
-	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
+	err := writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
 		sec, bh.Bits, bh.Nonce)
+	if err != nil {
+		return err
+	}
+	if sFlag {
+		// todo ppc this is experimental. remove sFlag and write meta flags elsewhere
+		err = writeElement(w, bh.Flags)
+	}
+	return err
 }

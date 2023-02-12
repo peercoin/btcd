@@ -350,7 +350,7 @@ func (b *BlockChain) TstSetCoinbaseMaturity(maturity uint16) {
 func newFakeChain(params *chaincfg.Params) *BlockChain {
 	// Create a genesis block node and block index index populated with it
 	// for use when creating the fake chain below.
-	node := newBlockNode(&params.GenesisBlock.Header, nil)
+	node := newBlockNode(&params.GenesisBlock.Header, params.GenesisMeta, nil)
 	index := newBlockIndex(nil, params)
 	index.AddNode(node)
 
@@ -386,13 +386,14 @@ func newFakeChain(params *chaincfg.Params) *BlockChain {
 
 // newFakeNode creates a block node connected to the passed parent with the
 // provided fields populated and fake values for the other fields.
-func newFakeNode(parent *blockNode, blockVersion int32, bits uint32, timestamp time.Time) *blockNode {
+func newFakeNode(parent *blockNode, blockVersion int32, blockMeta *wire.Meta, bits uint32, timestamp time.Time) *blockNode {
 	// Make up a header and create a block node from it.
 	header := &wire.BlockHeader{
 		Version:   blockVersion,
 		PrevBlock: parent.hash,
 		Bits:      bits,
 		Timestamp: timestamp,
+		Flags:     blockMeta.Flags,
 	}
-	return newBlockNode(header, parent)
+	return newBlockNode(header, blockMeta, parent)
 }

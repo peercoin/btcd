@@ -100,6 +100,7 @@ func dbIndexConnectBlock(dbTx database.Tx, indexer Indexer, block *btcutil.Block
 // not the passed block.
 func dbIndexDisconnectBlock(dbTx database.Tx, indexer Indexer, block *btcutil.Block,
 	stxo []blockchain.SpentTxOut) error {
+	// todo ppc possible disconnect / update block meta. while it should be overwritten already, we still need to make sure
 
 	// Assert that the block being disconnected is the current tip of the
 	// index.
@@ -314,6 +315,15 @@ func (m *Manager) Init(chain *blockchain.BlockChain, interrupt <-chan struct{}) 
 					return err
 				}
 				block.SetHeight(height)
+				// todo ppc verify. it's possible we've never written this one at this point
+				metaBuf, err := blockchain.GetBlkMeta(dbTx, block.MsgBlock().BlockHash())
+				if err != nil {
+					return err
+				}
+				err = block.MetaFromBytes(metaBuf)
+				if err != nil {
+					return err
+				}
 				return err
 			})
 			if err != nil {

@@ -99,21 +99,25 @@ type blockNode struct {
 	// only be accessed using the concurrent-safe NodeStatus method on
 	// blockIndex once the node has been added to the global index.
 	status blockStatus
+	
+	meta *wire.Meta
 }
 
 // initBlockNode initializes a block node from the given header and parent node,
 // calculating the height and workSum from the respective fields on the parent.
 // This function is NOT safe for concurrent access.  It must only be called when
 // initially creating a node.
-func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *blockNode) {
+func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, blockMeta *wire.Meta, parent *blockNode) {
+	workSum := calcTrust(blockHeader.Bits, (blockMeta.Flags&FBlockProofOfStake) > 0)
 	*node = blockNode{
 		hash:       blockHeader.BlockHash(),
-		workSum:    CalcWork(blockHeader.Bits),
+		workSum:    workSum,
 		version:    blockHeader.Version,
 		bits:       blockHeader.Bits,
 		nonce:      blockHeader.Nonce,
 		timestamp:  blockHeader.Timestamp.Unix(),
 		merkleRoot: blockHeader.MerkleRoot,
+		meta:       blockMeta,
 	}
 	if parent != nil {
 		node.parent = parent
@@ -125,9 +129,9 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *block
 // newBlockNode returns a new block node for the given block header and parent
 // node, calculating the height and workSum from the respective fields on the
 // parent. This function is NOT safe for concurrent access.
-func newBlockNode(blockHeader *wire.BlockHeader, parent *blockNode) *blockNode {
+func newBlockNode(blockHeader *wire.BlockHeader, blockMeta *wire.Meta, parent *blockNode) *blockNode {
 	var node blockNode
-	initBlockNode(&node, blockHeader, parent)
+	initBlockNode(&node, blockHeader, blockMeta, parent)
 	return &node
 }
 
@@ -147,6 +151,7 @@ func (node *blockNode) Header() wire.BlockHeader {
 		Timestamp:  time.Unix(node.timestamp, 0),
 		Bits:       node.bits,
 		Nonce:      node.nonce,
+		Flags:      node.meta.Flags,
 	}
 }
 

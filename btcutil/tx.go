@@ -27,6 +27,7 @@ type Tx struct {
 	txHashWitness *chainhash.Hash // Cached transaction witness hash
 	txHasWitness  *bool           // If the transaction has witness data
 	txIndex       int             // Position within a block or TxIndexUnknown
+	txOffset      uint32          // peercoin Offset within a block or TxOffsetUnknown
 }
 
 // MsgTx returns the underlying wire.MsgTx for the transaction.
@@ -94,8 +95,9 @@ func (t *Tx) SetIndex(index int) {
 // wire.MsgTx.  See Tx.
 func NewTx(msgTx *wire.MsgTx) *Tx {
 	return &Tx{
-		msgTx:   msgTx,
-		txIndex: TxIndexUnknown,
+		msgTx:    msgTx,
+		txIndex:  TxIndexUnknown,
+		txOffset: TxOffsetUnknown, // peercoin:
 	}
 }
 
@@ -117,8 +119,9 @@ func NewTxFromReader(r io.Reader) (*Tx, error) {
 	}
 
 	t := Tx{
-		msgTx:   &msgTx,
-		txIndex: TxIndexUnknown,
+		msgTx:    &msgTx,
+		txIndex:  TxIndexUnknown,
+		txOffset: TxOffsetUnknown, // peercoin:
 	}
 	return &t, nil
 }

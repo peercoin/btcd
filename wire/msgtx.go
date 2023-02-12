@@ -11,13 +11,14 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 const (
 	// TxVersion is the current latest supported transaction version.
-	TxVersion = 1
+	TxVersion = 3
 
 	// MaxTxInSequenceNum is the maximum sequence number the sequence field
 	// of a transaction input can be.
@@ -76,10 +77,10 @@ const (
 	// that any realistically usable transaction must have at least one
 	// input or output, but that is a rule enforced at a higher layer, so
 	// it is intentionally not included here.
-	// Version 4 bytes + Varint number of transaction inputs 1 byte + Varint
+	// Version 4 bytes + Time 4 bytes + Varint number of transaction inputs 1 byte + Varint
 	// number of transaction outputs 1 byte + LockTime 4 bytes + min input
 	// payload + min output payload.
-	minTxPayload = 10
+	minTxPayload = 14
 
 	// freeListMaxScriptSize is the size of each buffer in the free list
 	// that	is used for deserializing scripts from the wire before they are
@@ -339,10 +340,11 @@ func NewTxOut(value int64, pkScript []byte) *TxOut {
 // Use the AddTxIn and AddTxOut functions to build up the list of transaction
 // inputs and outputs.
 type MsgTx struct {
-	Version  int32
-	TxIn     []*TxIn
-	TxOut    []*TxOut
-	LockTime uint32
+	Version   int32
+	Timestamp time.Time
+	TxIn      []*TxIn
+	TxOut     []*TxOut
+	LockTime  uint32
 }
 
 // AddTxIn adds a transaction input to the message.
@@ -387,10 +389,11 @@ func (msg *MsgTx) Copy() *MsgTx {
 	// Create new tx and start by copying primitive values and making space
 	// for the transaction inputs and outputs.
 	newTx := MsgTx{
-		Version:  msg.Version,
-		TxIn:     make([]*TxIn, 0, len(msg.TxIn)),
-		TxOut:    make([]*TxOut, 0, len(msg.TxOut)),
-		LockTime: msg.LockTime,
+		Version:   msg.Version,
+		Timestamp: msg.Timestamp,
+		TxIn:      make([]*TxIn, 0, len(msg.TxIn)),
+		TxOut:     make([]*TxOut, 0, len(msg.TxOut)),
+		LockTime:  msg.LockTime,
 	}
 
 	// Deep copy the old TxIn data.
@@ -466,6 +469,15 @@ func (msg *MsgTx) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) error
 		return err
 	}
 	msg.Version = int32(version)
+
+	if version < 3 {
+		err = readElement(r, (*uint32Time)(&msg.Timestamp))
+		if err != nil {
+			return err
+		}
+	} else {
+		msg.Timestamp = time.Unix(0, 0)
+	}
 
 	count, err := ReadVarInt(r, pver)
 	if err != nil {
@@ -738,6 +750,13 @@ func (msg *MsgTx) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error
 		return err
 	}
 
+	if msg.Version < 3 {
+		err = writeElement(w, uint32(msg.Timestamp.Unix()))
+		if err != nil {
+			return err
+		}
+	}
+
 	// If the encoding version is set to WitnessEncoding, and the Flags
 	// field for the MsgTx aren't 0x00, then this indicates the transaction
 	// is to be encoded using the new witness inclusionary structure
@@ -838,9 +857,9 @@ func (msg *MsgTx) SerializeNoWitness(w io.Writer) error {
 // baseSize returns the serialized size of the transaction without accounting
 // for any witness data.
 func (msg *MsgTx) baseSize() int {
-	// Version 4 bytes + LockTime 4 bytes + Serialized varint size for the
+	// Version 4 bytes + Time 4 bytes + LockTime 4 bytes + Serialized varint size for the
 	// number of transaction inputs and outputs.
-	n := 8 + VarIntSerializeSize(uint64(len(msg.TxIn))) +
+	n := 12 + VarIntSerializeSize(uint64(len(msg.TxIn))) +
 		VarIntSerializeSize(uint64(len(msg.TxOut)))
 
 	for _, txIn := range msg.TxIn {
@@ -942,9 +961,10 @@ func (msg *MsgTx) PkScriptLocs() []int {
 // future.
 func NewMsgTx(version int32) *MsgTx {
 	return &MsgTx{
-		Version: version,
-		TxIn:    make([]*TxIn, 0, defaultTxInOutAlloc),
-		TxOut:   make([]*TxOut, 0, defaultTxInOutAlloc),
+		Version:   version,
+		Timestamp: time.Unix(time.Now().Unix(), 0),
+		TxIn:      make([]*TxIn, 0, defaultTxInOutAlloc),
+		TxOut:     make([]*TxOut, 0, defaultTxInOutAlloc),
 	}
 }
 

@@ -5,6 +5,7 @@
 package chaincfg
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -55,6 +56,35 @@ var genesisCoinbaseTx = wire.MsgTx{
 	LockTime: 0,
 }
 
+var genesisCoinbaseTxPPC = wire.MsgTx{
+	Version:   1,
+	Timestamp: time.Unix(0x502c59a2, 0),
+	TxIn: []*wire.TxIn{
+		{
+			PreviousOutPoint: wire.OutPoint{
+				Hash:  chainhash.Hash{},
+				Index: 0xffffffff,
+			},
+			SignatureScript: []byte{
+				0x04, 0xff, 0xff, 0x00, 0x1d, 0x02, 0x0f, 0x27,
+				0x4b, 0x4d, 0x61, 0x74, 0x6f, 0x6e, 0x69, 0x73,
+				0x20, 0x30, 0x37, 0x2d, 0x41, 0x55, 0x47, 0x2d,
+				0x32, 0x30, 0x31, 0x32, 0x20, 0x50, 0x61, 0x72,
+				0x61, 0x6c, 0x6c, 0x65, 0x6c, 0x20, 0x43, 0x75,
+				0x72, 0x72, 0x65, 0x6e, 0x63, 0x69, 0x65, 0x73,
+				0x20, 0x41, 0x6e, 0x64, 0x20, 0x54, 0x68, 0x65,
+				0x20, 0x52, 0x6f, 0x61, 0x64, 0x6d, 0x61, 0x70,
+				0x20, 0x54, 0x6f, 0x20, 0x4d, 0x6f, 0x6e, 0x65,
+				0x74, 0x61, 0x72, 0x79, 0x20, 0x46, 0x72, 0x65,
+				0x65, 0x64, 0x6f, 0x6d,
+			},
+			Sequence: 0xffffffff,
+		},
+	},
+	TxOut:    []*wire.TxOut{{}},
+	LockTime: 0,
+}
+
 // genesisHash is the hash of the first block in the block chain for the main
 // network (genesis block).
 var genesisHash = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
@@ -64,6 +94,13 @@ var genesisHash = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
 	0x68, 0xd6, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00,
 })
 
+var genesisHashPPC = chainhash.Hash([chainhash.HashSize]byte{
+	0xe3, 0x27, 0xcd, 0x80, 0xc8, 0xb1, 0x7e, 0xfd,
+	0xa4, 0xea, 0x08, 0xc5, 0x87, 0x7e, 0x95, 0xd8,
+	0x77, 0x46, 0x2a, 0xb6, 0x63, 0x49, 0xd5, 0x66,
+	0x71, 0x67, 0xfe, 0x32, 0x00, 0x00, 0x00, 0x00,
+})
+
 // genesisMerkleRoot is the hash of the first transaction in the genesis block
 // for the main network.
 var genesisMerkleRoot = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
@@ -71,6 +108,13 @@ var genesisMerkleRoot = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet 
 	0x7a, 0xc7, 0x2c, 0x3e, 0x67, 0x76, 0x8f, 0x61,
 	0x7f, 0xc8, 0x1b, 0xc3, 0x88, 0x8a, 0x51, 0x32,
 	0x3a, 0x9f, 0xb8, 0xaa, 0x4b, 0x1e, 0x5e, 0x4a,
+})
+
+var genesisMerkleRootPPC = chainhash.Hash([chainhash.HashSize]byte{
+	0xc2, 0x93, 0x59, 0x2c, 0x05, 0x90, 0x56, 0x98,
+	0x29, 0x0c, 0x89, 0xeb, 0x6d, 0xde, 0xf0, 0xcf,
+	0x8a, 0xa5, 0xa1, 0x48, 0xc6, 0x8c, 0x55, 0xac,
+	0x7a, 0xd1, 0xb4, 0xfa, 0x85, 0x8f, 0x2d, 0x3c,
 })
 
 // genesisBlock defines the genesis block of the block chain which serves as the
@@ -85,6 +129,27 @@ var genesisBlock = wire.MsgBlock{
 		Nonce:      0x7c2bac1d,               // 2083236893
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
+	Signature:    []byte{},
+}
+
+var genesisBlockPPC = wire.MsgBlock{
+	Header: wire.BlockHeader{
+		Version:    1,
+		PrevBlock:  chainhash.Hash{},
+		MerkleRoot: genesisMerkleRootPPC,
+		Timestamp:  time.Unix(0x502c5b7f, 0),
+		Bits:       0x1d00ffff,
+		Nonce:      0x81e582ab,
+	},
+	Transactions: []*wire.MsgTx{&genesisCoinbaseTxPPC},
+	Signature:    []byte{},
+}
+
+var genesisMeta = wire.Meta{
+	StakeModifier:         0,
+	StakeModifierChecksum: 0x0e00670b,
+	Flags:                 6,
+	ChainTrust:            *big.NewInt(1),
 }
 
 // regTestGenesisHash is the hash of the first block in the block chain for the
@@ -124,10 +189,19 @@ var testNet3GenesisHash = chainhash.Hash([chainhash.HashSize]byte{ // Make go ve
 	0x01, 0xea, 0x33, 0x09, 0x00, 0x00, 0x00, 0x00,
 })
 
+var testNet3GenesisHashPPC = chainhash.Hash([chainhash.HashSize]byte{
+	0x06, 0x9f, 0x7c, 0xc4, 0xae, 0x81, 0xca, 0x0c,
+	0x7c, 0x72, 0xcc, 0x30, 0xe6, 0x8c, 0x65, 0xb0,
+	0x17, 0xcd, 0x17, 0x3e, 0x50, 0x96, 0x65, 0x7f,
+	0x73, 0xbb, 0x57, 0xf7, 0x01, 0x00, 0x00, 0x00,
+})
+
 // testNet3GenesisMerkleRoot is the hash of the first transaction in the genesis
 // block for the test network (version 3).  It is the same as the merkle root
 // for the main network.
 var testNet3GenesisMerkleRoot = genesisMerkleRoot
+
+var testNet3GenesisMerkleRootPPC = genesisMerkleRootPPC
 
 // testNet3GenesisBlock defines the genesis block of the block chain which
 // serves as the public transaction ledger for the test network (version 3).
@@ -141,6 +215,19 @@ var testNet3GenesisBlock = wire.MsgBlock{
 		Nonce:      0x18aea41a,                // 414098458
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
+}
+
+var testNet3GenesisBlockPPC = wire.MsgBlock{
+	Header: wire.BlockHeader{
+		Version:    1,
+		PrevBlock:  chainhash.Hash{},
+		MerkleRoot: testNet3GenesisMerkleRootPPC,
+		Timestamp:  time.Unix(1345090000, 0),
+		Bits:       0x1d0fffff,
+		Nonce:      0x07533a5a,
+	},
+	Transactions: []*wire.MsgTx{&genesisCoinbaseTxPPC},
+	Signature:    []byte{},
 }
 
 // simNetGenesisHash is the hash of the first block in the block chain for the

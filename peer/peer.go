@@ -29,7 +29,7 @@ import (
 
 const (
 	// MaxProtocolVersion is the max protocol version the peer supports.
-	MaxProtocolVersion = wire.AddrV2Version
+	MaxProtocolVersion = 70017
 
 	// DefaultTrickleInterval is the min time between attempts to send an
 	// inv message to a peer.
@@ -37,7 +37,7 @@ const (
 
 	// MinAcceptableProtocolVersion is the lowest protocol version that a
 	// connected peer may support.
-	MinAcceptableProtocolVersion = wire.MultipleAddressVersion
+	MinAcceptableProtocolVersion = 70016
 
 	// outputBufferSize is the number of elements the output channels use.
 	outputBufferSize = 50
@@ -84,6 +84,9 @@ var (
 	// sentNonces houses the unique nonces that are generated when pushing
 	// version messages that are used to detect self connections.
 	sentNonces = lru.NewCache(50)
+
+	// var mapPoSTemperature map[CNetAddr]int32
+	mapPoSTemperature map[string]int32
 )
 
 // MessageListeners defines callback function pointers to invoke with message
@@ -291,6 +294,16 @@ type Config struct {
 	DisableStallHandler bool
 }
 
+// todo ppc
+func GetMapPos() map[string]int32 {
+	return mapPoSTemperature
+}
+
+// todo ppc
+func SetMapPos(a string, b int32) {
+	mapPoSTemperature[a] = b
+}
+
 // minUint32 is a helper function to return the minimum of two uint32s.
 // This avoids a math import and the need to cast to floats.
 func minUint32(a, b uint32) uint32 {
@@ -481,9 +494,10 @@ type Peer struct {
 	startingHeight     int32
 	lastBlock          int32
 	lastAnnouncedBlock *chainhash.Hash
-	lastPingNonce      uint64    // Set to nonce if we have a pending ping.
-	lastPingTime       time.Time // Time we sent last ping.
-	lastPingMicros     int64     // Time for last ping to return.
+	lastAcceptedHeader *chainhash.Hash // peercoin: used to detect branch switches
+	lastPingNonce      uint64          // Set to nonce if we have a pending ping.
+	lastPingTime       time.Time       // Time we sent last ping.
+	lastPingMicros     int64           // Time for last ping to return.
 
 	stallControl  chan stallControlMsg
 	outputQueue   chan outMsg
@@ -517,6 +531,18 @@ func (p *Peer) UpdateLastBlockHeight(newHeight int32) {
 		p.addr, p.lastBlock, newHeight)
 	p.lastBlock = newHeight
 	p.statsMtx.Unlock()
+}
+
+func (p *Peer) UpdateLastAcceptedHeader(blkHash *chainhash.Hash) {
+	log.Tracef("Updating last accepted header for peer %v, %v", p.addr, blkHash)
+
+	p.statsMtx.Lock()
+	p.lastAcceptedHeader = blkHash
+	p.statsMtx.Unlock()
+}
+
+func (p *Peer) LastAcceptedHeader() chainhash.Hash {
+	return *p.lastAcceptedHeader
 }
 
 // UpdateLastAnnouncedBlock updates meta-data about the last block hash this
@@ -910,6 +936,11 @@ func (p *Peer) PushAddrV2Msg(addrs []*wire.NetAddressV2) (
 //
 // This function is safe for concurrent access.
 func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chainhash.Hash) error {
+	// todo ppc this gets rid of the forced timeout -> dc when requesting blocks because otherwise we'd just be ignored
+	//   it's not clear to me just yet if we should be sending getblocks in the first place
+	if len(locator) > 0 {
+		locator = locator[1:]
+	}
 	// Extract the begin hash from the block locator, if one was specified,
 	// to use for filtering duplicate getblocks requests.
 	var beginHash *chainhash.Hash
@@ -931,6 +962,8 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 	}
 
 	// Construct the getblocks request and queue it to be sent.
+	// todo ppc this is producing something the endpoint can't or wont handle at the moment
+	//   which in turn causes the message to stall
 	msg := wire.NewMsgGetBlocks(stopHash)
 	for _, hash := range locator {
 		err := msg.AddBlockLocatorHash(hash)
@@ -1211,7 +1244,9 @@ func (p *Peer) maybeAddDeadline(pendingResponses map[string]time.Time, msgCmd st
 
 	case wire.CmdGetBlocks:
 		// Expects an inv message.
+		// todo ppc we appear to be missing some info so we could just udp these until fixed
 		pendingResponses[wire.CmdInv] = deadline
+		log.Debugf("%s, %v", msgCmd, deadline)
 
 	case wire.CmdGetData:
 		// Expects a block, merkleblock, tx, or notfound message.
@@ -1344,6 +1379,7 @@ out:
 					continue
 				}
 
+				log.Debugf("%s, %v", command, deadline)
 				log.Debugf("Peer %s appears to be stalled or "+
 					"misbehaving, %s timeout -- "+
 					"disconnecting", p, command)
@@ -1970,6 +2006,13 @@ func (p *Peer) readRemoteVersionMsg() error {
 	if err != nil {
 		return err
 	}
+	_, exists := mapPoSTemperature[p.addr]
+	if !exists {
+		if mapPoSTemperature == nil { // todo ppc move init up to server perhaps
+			mapPoSTemperature = make(map[string]int32)
+		}
+		mapPoSTemperature[p.addr] = wire.MaxConsecutivePoSHeaders / 4
+	}
 
 	// Notify and disconnect clients if the first message is not a version
 	// message.
@@ -2385,21 +2428,22 @@ func newPeerBase(origCfg *Config, inbound bool) *Peer {
 	}
 
 	p := Peer{
-		inbound:         inbound,
-		wireEncoding:    wire.BaseEncoding,
-		knownInventory:  lru.NewCache(maxKnownInventory),
-		stallControl:    make(chan stallControlMsg, 1), // nonblocking sync
-		outputQueue:     make(chan outMsg, outputBufferSize),
-		sendQueue:       make(chan outMsg, 1),   // nonblocking sync
-		sendDoneQueue:   make(chan struct{}, 1), // nonblocking sync
-		outputInvChan:   make(chan *wire.InvVect, outputBufferSize),
-		inQuit:          make(chan struct{}),
-		queueQuit:       make(chan struct{}),
-		outQuit:         make(chan struct{}),
-		quit:            make(chan struct{}),
-		cfg:             cfg, // Copy so caller can't mutate.
-		services:        cfg.Services,
-		protocolVersion: cfg.ProtocolVersion,
+		inbound:            inbound,
+		wireEncoding:       wire.BaseEncoding,
+		knownInventory:     lru.NewCache(maxKnownInventory),
+		stallControl:       make(chan stallControlMsg, 1), // nonblocking sync
+		outputQueue:        make(chan outMsg, outputBufferSize),
+		sendQueue:          make(chan outMsg, 1),   // nonblocking sync
+		sendDoneQueue:      make(chan struct{}, 1), // nonblocking sync
+		outputInvChan:      make(chan *wire.InvVect, outputBufferSize),
+		inQuit:             make(chan struct{}),
+		queueQuit:          make(chan struct{}),
+		outQuit:            make(chan struct{}),
+		quit:               make(chan struct{}),
+		cfg:                cfg, // Copy so caller can't mutate.
+		services:           cfg.Services,
+		protocolVersion:    cfg.ProtocolVersion,
+		lastAcceptedHeader: &zeroHash, // todo ppc this assumes we accept a single header by default, which is wrong
 	}
 	return &p
 }

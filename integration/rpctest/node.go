@@ -51,7 +51,7 @@ func newConfig(prefix, certFile, keyFile string, extra []string,
 		var err error
 		btcdPath, err = btcdExecutablePath()
 		if err != nil {
-			btcdPath = "btcd"
+			btcdPath = "ppcd"
 		}
 	}
 

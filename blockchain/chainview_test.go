@@ -27,10 +27,11 @@ func chainedNodes(parent *blockNode, numNodes int) []*blockNode {
 		// This is invalid, but all that is needed is enough to get the
 		// synthetic tests to work.
 		header := wire.BlockHeader{Nonce: testNoncePrng.Uint32()}
+		meta := wire.Meta{} // todo ppc do we want this empty?
 		if tip != nil {
 			header.PrevBlock = tip.hash
 		}
-		nodes[i] = newBlockNode(&header, tip)
+		nodes[i] = newBlockNode(&header, &meta, tip)
 		tip = nodes[i]
 	}
 	return nodes

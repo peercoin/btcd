@@ -1179,7 +1179,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 
 	return blockReply, nil
 }
-
+/* todo ppc
 // softForkStatus converts a ThresholdState state into a human readable string
 // corresponding to the particular state.
 func softForkStatus(state blockchain.ThresholdState) (string, error) {
@@ -1198,6 +1198,7 @@ func softForkStatus(state blockchain.ThresholdState) (string, error) {
 		return "", fmt.Errorf("unknown deployment state: %v", state)
 	}
 }
+*/
 
 // handleGetBlockChainInfo implements the getblockchaininfo command.
 func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -1240,7 +1241,7 @@ func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 			Reject: struct {
 				Status bool `json:"status"`
 			}{
-				Status: height >= params.BIP0066Height,
+				Status: true, // todo ppc height >= params.BIP0066Height,
 			},
 		},
 		{
@@ -1249,11 +1250,12 @@ func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 			Reject: struct {
 				Status bool `json:"status"`
 			}{
-				Status: height >= params.BIP0065Height,
+				Status: true, // todo ppc //height >= params.BIP0065Height,
 			},
 		},
 	}
 
+	/* todo ppc
 	// Finally, query the BIP0009 version bits state for all currently
 	// defined BIP0009 soft-fork deployments.
 	for deployment, deploymentDetails := range params.Deployments {
@@ -1265,52 +1267,52 @@ func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 			forkName = "dummy"
 
 		case chaincfg.DeploymentTestDummyMinActivation:
-			forkName = "dummy-min-activation"
+		forkName = "dummy-min-activation"
 
 		case chaincfg.DeploymentCSV:
-			forkName = "csv"
+		forkName = "csv"
 
 		case chaincfg.DeploymentSegwit:
-			forkName = "segwit"
+		forkName = "segwit"
 
 		case chaincfg.DeploymentTaproot:
-			forkName = "taproot"
+		forkName = "taproot"
 
 		default:
-			return nil, &btcjson.RPCError{
-				Code: btcjson.ErrRPCInternal.Code,
-				Message: fmt.Sprintf("Unknown deployment %v "+
-					"detected", deployment),
-			}
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInternal.Code,
+			Message: fmt.Sprintf("Unknown deployment %v "+
+				"detected", deployment),
 		}
+	}
 
 		// Query the chain for the current status of the deployment as
-		// identified by its deployment ID.
-		deploymentStatus, err := chain.ThresholdState(uint32(deployment))
-		if err != nil {
-			context := "Failed to obtain deployment status"
-			return nil, internalRPCError(err.Error(), context)
-		}
+	// identified by its deployment ID.
+	deploymentStatus, err := chain.ThresholdState(uint32(deployment))
+	if err != nil {
+		context := "Failed to obtain deployment status"
+		return nil, internalRPCError(err.Error(), context)
+	}
 
 		// Attempt to convert the current deployment status into a
-		// human readable string. If the status is unrecognized, then a
-		// non-nil error is returned.
-		statusString, err := softForkStatus(deploymentStatus)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code: btcjson.ErrRPCInternal.Code,
-				Message: fmt.Sprintf("unknown deployment status: %v",
-					deploymentStatus),
-			}
+	// human readable string. If the status is unrecognized, then a
+	// non-nil error is returned.
+	statusString, err := softForkStatus(deploymentStatus)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code: btcjson.ErrRPCInternal.Code,
+			Message: fmt.Sprintf("unknown deployment status: %v",
+				deploymentStatus),
 		}
+	}
 
 		// Finally, populate the soft-fork description with all the
-		// information gathered above.
-		var startTime, endTime int64
-		if starter, ok := deploymentDetails.DeploymentStarter.(*chaincfg.MedianTimeDeploymentStarter); ok {
-			startTime = starter.StartTime().Unix()
-		}
-		if ender, ok := deploymentDetails.DeploymentEnder.(*chaincfg.MedianTimeDeploymentEnder); ok {
+	// information gathered above.
+	var startTime, endTime int64
+	if starter, ok := deploymentDetails.DeploymentStarter.(*chaincfg.MedianTimeDeploymentStarter); ok {
+		startTime = starter.StartTime().Unix()
+	}
+	if ender, ok := deploymentDetails.DeploymentEnder.(*chaincfg.MedianTimeDeploymentEnder); ok {
 			endTime = ender.EndTime().Unix()
 		}
 		chainInfo.SoftForks.Bip9SoftForks[forkName] = &btcjson.Bip9SoftForkDescription{
@@ -1321,6 +1323,7 @@ func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 			MinActivationHeight: int32(deploymentDetails.MinActivationHeight),
 		}
 	}
+	*/
 
 	return chainInfo, nil
 }
@@ -1978,7 +1981,7 @@ func handleGetBlockTemplateRequest(s *rpcServer, request *btcjson.TemplateReques
 
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCClientNotConnected,
-			Message: "Bitcoin is not connected",
+			Message: "Peercoin is not connected",
 		}
 	}
 
@@ -1987,7 +1990,7 @@ func handleGetBlockTemplateRequest(s *rpcServer, request *btcjson.TemplateReques
 	if currentHeight != 0 && !s.cfg.SyncMgr.IsCurrent() {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCClientInInitialDownload,
-			Message: "Bitcoin is downloading blocks...",
+			Message: "Peercoin is downloading blocks...",
 		}
 	}
 
@@ -3515,7 +3518,7 @@ func handleSetGenerate(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 
 // Text used to signify that a signed message follows and to prevent
 // inadvertently signing a transaction.
-const messageSignatureHeader = "Bitcoin Signed Message:\n"
+const messageSignatureHeader = "Peercoin Signed Message:\n"
 
 // handleSignMessageWithPrivKey implements the signmessagewithprivkey command.
 func handleSignMessageWithPrivKey(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -3565,7 +3568,7 @@ func handleStop(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (inter
 	case s.requestProcessShutdown <- struct{}{}:
 	default:
 	}
-	return "btcd stopping.", nil
+	return "ppcd stopping.", nil
 }
 
 // handleSubmitBlock implements the submitblock command.
@@ -3675,7 +3678,7 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
 			err := blockchain.CheckBlockSanity(block,
-				s.cfg.ChainParams.PowLimit, s.cfg.TimeSource)
+				s.cfg.ChainParams, s.cfg.TimeSource)
 			if err != nil {
 				rpcsLog.Errorf("Verify is unable to validate "+
 					"block at hash %v height %d: %v",
@@ -3773,7 +3776,7 @@ func handleVerifyMessage(s *rpcServer, cmd interface{}, closeChan <-chan struct{
 // NOTE: This is a btcsuite extension ported from github.com/decred/dcrd.
 func handleVersion(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	result := map[string]btcjson.VersionResult{
-		"btcdjsonrpcapi": {
+		"ppcdjsonrpcapi": {
 			VersionString: jsonrpcSemverString,
 			Major:         jsonrpcSemverMajor,
 			Minor:         jsonrpcSemverMinor,
@@ -4367,7 +4370,7 @@ func (s *rpcServer) jsonRPCRead(w http.ResponseWriter, r *http.Request, isAdmin 
 
 // jsonAuthFail sends a message back to the client if the http auth is rejected.
 func jsonAuthFail(w http.ResponseWriter) {
-	w.Header().Add("WWW-Authenticate", `Basic realm="btcd RPC"`)
+	w.Header().Add("WWW-Authenticate", `Basic realm="ppcd RPC"`)
 	http.Error(w, "401 Unauthorized.", http.StatusUnauthorized)
 }
 
@@ -4448,7 +4451,7 @@ func (s *rpcServer) Start() {
 func genCertPair(certFile, keyFile string) error {
 	rpcsLog.Infof("Generating TLS certificates...")
 
-	org := "btcd autogenerated cert"
+	org := "ppcd autogenerated cert"
 	validUntil := time.Now().Add(10 * 365 * 24 * time.Hour)
 	cert, key, err := btcutil.NewTLSCertPair(org, validUntil, nil)
 	if err != nil {

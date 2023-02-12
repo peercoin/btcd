@@ -24,7 +24,8 @@ func TestBlock(t *testing.T) {
 	merkleHash := &blockOne.Header.MerkleRoot
 	bits := blockOne.Header.Bits
 	nonce := blockOne.Header.Nonce
-	bh := NewBlockHeader(1, prevHash, merkleHash, bits, nonce)
+	flags := blockOne.Header.Flags
+	bh := NewBlockHeader(1, prevHash, merkleHash, bits, nonce, flags)
 
 	// Ensure the command is expected value.
 	wantCmd := "block"

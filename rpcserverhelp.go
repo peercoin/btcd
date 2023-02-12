@@ -607,7 +607,7 @@ var helpDescsEnUS = map[string]string{
 
 	// ValidateAddressCmd help.
 	"validateaddress--synopsis": "Verify an address is valid.",
-	"validateaddress-address":   "Bitcoin address to validate",
+	"validateaddress-address":   "Peercoin address to validate",
 
 	// VerifyChainCmd help.
 	"verifychain--synopsis": "Verifies the block chain database.\n" +

@@ -24,7 +24,7 @@ func TestBlockHeader(t *testing.T) {
 	hash := mainNetGenesisHash
 	merkleHash := mainNetGenesisMerkleRoot
 	bits := uint32(0x1d00ffff)
-	bh := NewBlockHeader(1, &hash, &merkleHash, bits, nonce)
+	bh := NewBlockHeader(1, &hash, &merkleHash, bits, nonce, 0)
 
 	// Ensure we get the same data back out.
 	if !bh.PrevBlock.IsEqual(&hash) {
@@ -135,7 +135,7 @@ func TestBlockHeaderWire(t *testing.T) {
 	for i, test := range tests {
 		// Encode to wire format.
 		var buf bytes.Buffer
-		err := writeBlockHeader(&buf, test.pver, test.in)
+		err := writeBlockHeader(&buf, test.pver, test.in, true)
 		if err != nil {
 			t.Errorf("writeBlockHeader #%d error %v", i, err)
 			continue

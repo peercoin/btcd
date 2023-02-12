@@ -58,6 +58,7 @@ const (
 	CmdCFilter      = "cfilter"
 	CmdCFHeaders    = "cfheaders"
 	CmdCFCheckpt    = "cfcheckpt"
+	// todo ppc add checkpoint
 	CmdSendAddrV2   = "sendaddrv2"
 )
 

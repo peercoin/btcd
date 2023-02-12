@@ -43,6 +43,7 @@ type TxLoc struct {
 type MsgBlock struct {
 	Header       BlockHeader
 	Transactions []*MsgTx
+	Signature    []byte
 }
 
 // AddTransaction adds a transaction to the message.
@@ -89,6 +90,13 @@ func (msg *MsgBlock) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) er
 			return err
 		}
 		msg.Transactions = append(msg.Transactions, &tx)
+	}
+
+	// todo ppc cap maxAllowed to 72?
+	msg.Signature, err = ReadVarBytes(r, pver, MaxMessagePayload,
+		"block signature")
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -166,6 +174,12 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 		txLocs[i].TxLen = (fullLen - r.Len()) - txLocs[i].TxStart
 	}
 
+	msg.Signature, err = ReadVarBytes(r, 0, MaxMessagePayload,
+		"block signature")
+	if err != nil {
+		return nil, err
+	}
+
 	return txLocs, nil
 }
 
@@ -174,7 +188,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 // See Serialize for encoding blocks to be stored to disk, such as in a
 // database, as opposed to encoding blocks for the wire.
 func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error {
-	err := writeBlockHeader(w, pver, &msg.Header)
+	err := writeBlockHeader(w, pver, &msg.Header, true)
 	if err != nil {
 		return err
 	}
@@ -189,6 +203,12 @@ func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) er
 		if err != nil {
 			return err
 		}
+	}
+
+	// todo ppc write blocksig here
+	err = WriteVarBytes(w, pver, msg.Signature)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -234,6 +254,8 @@ func (msg *MsgBlock) SerializeSize() int {
 		n += tx.SerializeSize()
 	}
 
+	n += VarIntSerializeSize(uint64(len(msg.Signature))) + len(msg.Signature)
+
 	return n
 }
 
@@ -247,6 +269,8 @@ func (msg *MsgBlock) SerializeSizeStripped() int {
 	for _, tx := range msg.Transactions {
 		n += tx.SerializeSizeStripped()
 	}
+
+	n += VarIntSerializeSize(uint64(len(msg.Signature))) + len(msg.Signature)
 
 	return n
 }
@@ -286,5 +310,6 @@ func NewMsgBlock(blockHeader *BlockHeader) *MsgBlock {
 	return &MsgBlock{
 		Header:       *blockHeader,
 		Transactions: make([]*MsgTx, 0, defaultTransactionAlloc),
+		Signature:    []byte{},
 	}
 }

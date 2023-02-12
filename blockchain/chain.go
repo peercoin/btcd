@@ -157,23 +157,6 @@ type BlockChain struct {
 	stateLock     sync.RWMutex
 	stateSnapshot *BestState
 
-	// The following caches are used to efficiently keep track of the
-	// current deployment threshold state of each rule change deployment.
-	//
-	// This information is stored in the database so it can be quickly
-	// reconstructed on load.
-	//
-	// warningCaches caches the current deployment threshold state for blocks
-	// in each of the **possible** deployments.  This is used in order to
-	// detect when new unrecognized rule changes are being voted on and/or
-	// have been activated such as will be the case when older versions of
-	// the software are being used
-	//
-	// deploymentCaches caches the current deployment threshold state for
-	// blocks in each of the actively defined deployments.
-	warningCaches    []thresholdStateCache
-	deploymentCaches []thresholdStateCache
-
 	// The following fields are used to determine if certain warnings have
 	// already been shown.
 	//
@@ -378,11 +361,13 @@ func (b *BlockChain) calcSequenceLock(node *blockNode, tx *btcutil.Tx, utxoView 
 		// Obtain the latest BIP9 version bits state for the
 		// CSV-package soft-fork deployment. The adherence of sequence
 		// locks depends on the current soft-fork state.
+		/*  todo ppc
 		csvState, err := b.deploymentState(node.parent, chaincfg.DeploymentCSV)
 		if err != nil {
 			return nil, err
 		}
-		csvSoftforkActive = csvState == ThresholdActive
+		*/
+		csvSoftforkActive = true // csvState == ThresholdActive
 	}
 
 	// If the transaction's version is less than 2, and BIP 68 has not yet
@@ -569,6 +554,18 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 			"that extends the main chain")
 	}
 
+	// peercoin
+	// todo ppc leave that in node?
+	block.Meta().ChainTrust = *node.workSum
+	//log.Debugf("Block %v trust = %v", node.height, node.workSum)
+
+	// ppcoin: calculate block mint and money supply
+	// todo ppc, works, but re-echeck placement
+	err := b.calcMintAndMoneySupply(block, prevHash)
+	if err != nil {
+		return err
+	}
+
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		return AssertError("connectBlock called with inconsistent " +
@@ -576,6 +573,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 	}
 
 	// No warnings about unknown rules until the chain is current.
+	/*  todo ppc
 	if b.isCurrent() {
 		// Warn if any unknown new rules are either about to activate or
 		// have already been activated.
@@ -583,9 +581,10 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 			return err
 		}
 	}
+	*/
 
 	// Write any block status changes to DB before updating best state.
-	err := b.index.flushToDB()
+	err = b.index.flushToDB()
 	if err != nil {
 		return err
 	}
@@ -633,6 +632,16 @@ func (b *BlockChain) connectBlock(node *blockNode, block *btcutil.Block,
 		// Add the block hash and height to the block index which tracks
 		// the main chain.
 		err = dbPutBlockIndex(dbTx, block.Hash(), node.height)
+		if err != nil {
+			return err
+		}
+
+		// todo ppc probably (re)move
+		sMeta, err := btcutil.MetaToBytes(block.Meta())
+		if err != nil {
+			return err
+		}
+		err = setBlkMeta(dbTx, block.Hash(), sMeta)
 		if err != nil {
 			return err
 		}
@@ -736,6 +745,7 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block *btcutil.Block, view
 		newTotalTxns, CalcPastMedianTime(prevNode))
 
 	err = b.db.Update(func(dbTx database.Tx) error {
+		// todo ppc disconnect meta?
 		// Update best block state.
 		err := dbPutBestState(dbTx, state, node.workSum)
 		if err != nil {
@@ -1784,11 +1794,12 @@ func New(config *Config) (*BlockChain, error) {
 		bestChain:           newChainView(nil),
 		orphans:             make(map[chainhash.Hash]*orphanBlock),
 		prevOrphans:         make(map[chainhash.Hash][]*orphanBlock),
-		warningCaches:       newThresholdCaches(vbNumBits),
-		deploymentCaches:    newThresholdCaches(chaincfg.DefinedDeployments),
+		// warningCaches:       newThresholdCaches(vbNumBits), todo ppc
+		// deploymentCaches:    newThresholdCaches(chaincfg.DefinedDeployments), todo ppc
 		pruneTarget:         config.Prune,
 	}
 
+	/* todo ppc
 	// Ensure all the deployments are synchronized with our clock if
 	// needed.
 	for _, deployment := range b.chainParams.Deployments {
@@ -1802,6 +1813,7 @@ func New(config *Config) (*BlockChain, error) {
 			clockEnder.SynchronizeClock(&b)
 		}
 	}
+	*/
 
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
@@ -1825,9 +1837,11 @@ func New(config *Config) (*BlockChain, error) {
 	}
 
 	// Initialize rule change threshold state caches.
+	/* todo ppc
 	if err := b.initThresholdCaches(); err != nil {
 		return nil, err
 	}
+	*/
 
 	bestNode := b.bestChain.Tip()
 	log.Infof("Chain state (height %d, hash %v, totaltx %d, work %v)",

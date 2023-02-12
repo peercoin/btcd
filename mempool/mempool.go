@@ -87,7 +87,7 @@ type Config struct {
 	// active, and false otherwise. The mempool uses this function to gauge
 	// if transactions using new to be soft-forked rules should be allowed
 	// into the mempool or not.
-	IsDeploymentActive func(deploymentID uint32) (bool, error)
+	// IsDeploymentActive func(deploymentID uint32) (bool, error) todo ppc
 
 	// SigCache defines a signature cache to use.
 	SigCache *txscript.SigCache
@@ -800,7 +800,7 @@ func (mp *TxPool) fetchInputUtxos(tx *btcutil.Tx) (*blockchain.UtxoViewpoint, er
 			// AddTxOut ignores out of range index values, so it is
 			// safe to call without bounds checking here.
 			utxoView.AddTxOut(poolTxDesc.Tx, prevOut.Index,
-				mining.UnminedHeight)
+				mining.UnminedHeight, time.Time{}, time.Time{}) // todo ppc null time should be ok here but check anyway, maybe depend on proto version
 		}
 	}
 
@@ -931,10 +931,13 @@ func (mp *TxPool) maybeAcceptTransaction(tx *btcutil.Tx, isNew, rateLimit, rejec
 	// segwit isn't active yet, then we won't accept it into the mempool as
 	// it can't be mined yet.
 	if tx.MsgTx().HasWitness() {
+		/* todo ppc
 		segwitActive, err := mp.cfg.IsDeploymentActive(chaincfg.DeploymentSegwit)
 		if err != nil {
 			return nil, nil, err
 		}
+		*/
+		segwitActive := blockchain.IsBTC16BIPsEnabled(mp.cfg.ChainParams, time.Now().Unix())
 
 		if !segwitActive {
 			simnetHint := ""
@@ -963,7 +966,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *btcutil.Tx, isNew, rateLimit, rejec
 	// Perform preliminary sanity checks on the transaction.  This makes
 	// use of blockchain which contains the invariant rules for what
 	// transactions are allowed into blocks.
-	err := blockchain.CheckTransactionSanity(tx)
+	err := blockchain.CheckTransactionSanity(mp.cfg.ChainParams, tx)
 	if err != nil {
 		if cerr, ok := err.(blockchain.RuleError); ok {
 			return nil, nil, chainRuleError(cerr)
@@ -971,9 +974,24 @@ func (mp *TxPool) maybeAcceptTransaction(tx *btcutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
+	/* todo ppc
+	   // Time (prevent mempool memory exhaustion attack)
+	   // moved from CheckTransaction() to here, because it makes no sense to make GetAdjustedTime() a part of the consensus rules - user can set his clock to whatever he wishes.
+	   if (tx.nTime > GetAdjustedTime() + (IsProtocolV09(GetAdjustedTime()) ? MAX_FUTURE_BLOCK_TIME : MAX_FUTURE_BLOCK_TIME_PREV9))
+	       return state.Invalid(TxValidationResult::TX_CONSENSUS, "timestamp-too-far");
+	*/
+
 	// A standalone transaction must not be a coinbase transaction.
 	if blockchain.IsCoinBase(tx) {
 		str := fmt.Sprintf("transaction %v is an individual coinbase",
+			txHash)
+		return nil, nil, txRuleError(wire.RejectInvalid, str)
+	}
+
+	// todo ppc it neither must be a coinstake transaction
+	// todo ppc check for similar pairings elsewhere
+	if blockchain.IsCoinStake(tx) {
+		str := fmt.Sprintf("transaction %v is an individual coinstake",
 			txHash)
 		return nil, nil, txRuleError(wire.RejectInvalid, str)
 	}
@@ -990,8 +1008,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *btcutil.Tx, isNew, rateLimit, rejec
 	// forbid their acceptance.
 	if !mp.cfg.Policy.AcceptNonStd {
 		err = CheckTransactionStandard(tx, nextBlockHeight,
-			medianTimePast, mp.cfg.Policy.MinRelayTxFee,
-			mp.cfg.Policy.MaxTxVersion)
+			medianTimePast, mp.cfg.Policy.MaxTxVersion)
 		if err != nil {
 			// Attempt to extract a reject code from the error so
 			// it can be retained.  When not possible, fall back to
@@ -1084,8 +1101,14 @@ func (mp *TxPool) maybeAcceptTransaction(tx *btcutil.Tx, isNew, rateLimit, rejec
 	// rules in blockchain for what transactions are allowed into blocks.
 	// Also returns the fees associated with the transaction which will be
 	// used later.
-	txFee, err := blockchain.CheckTransactionInputs(tx, nextBlockHeight,
-		utxoView, mp.cfg.ChainParams)
+	// todo ppc we currently have no way to handle utxos that are coinstake from here
+	//   -> we could add that to utxoviewpoint.go
+	nTimeTx := tx.MsgTx().Timestamp.Unix()
+	if nTimeTx == 0 {
+		nTimeTx = time.Now().Unix()
+	}
+	txFee, err := blockchain.CheckTransactionInputs(tx, nextBlockHeight, nTimeTx,
+		utxoView, 0, mp.cfg.ChainParams) // todo ppc fetch moneySupply, could be from bestState / chaintip
 	if err != nil {
 		if cerr, ok := err.(blockchain.RuleError); ok {
 			return nil, nil, chainRuleError(cerr)

@@ -186,6 +186,7 @@ func (msg *MsgVersion) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) 
 		return err
 	}
 
+	// todo ppc possibly disable bloom filter
 	// There was no relay transactions field before BIP0037Version.  Also,
 	// the wire encoding for the field is true when transactions should be
 	// relayed, so reverse it from the DisableRelayTx field.

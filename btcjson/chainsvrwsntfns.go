@@ -155,10 +155,12 @@ func NewFilteredBlockDisconnectedNtfn(height int32, header string) *FilteredBloc
 
 // BlockDetails describes details of a tx in a block.
 type BlockDetails struct {
-	Height int32  `json:"height"`
-	Hash   string `json:"hash"`
-	Index  int    `json:"index"`
-	Time   int64  `json:"time"`
+	Height        int32  `json:"height"`
+	Hash          string `json:"hash"`
+	Index         int    `json:"index"`
+	Time          int64  `json:"time"`
+	Offset        uint32 `json:"offset"`   // peercoin:
+	StakeModifier uint64 `json:"modifier"` // peercoin:
 }
 
 // RecvTxNtfn defines the recvtx JSON-RPC notification.

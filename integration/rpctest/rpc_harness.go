@@ -560,7 +560,7 @@ func NextAvailablePort() int {
 
 // baseDir is the directory path of the temp directory for all rpctest files.
 func baseDir() (string, error) {
-	dirPath := filepath.Join(os.TempDir(), "btcd", "rpctest")
+	dirPath := filepath.Join(os.TempDir(), "ppcd", "rpctest")
 	err := os.MkdirAll(dirPath, 0755)
 	return dirPath, err
 }

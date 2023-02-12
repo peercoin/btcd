@@ -1,3 +1,5 @@
+// todo ppc this file is actually useless and should be removed
+
 package chaincfg
 
 import (
@@ -22,7 +24,7 @@ type BlockClock interface {
 	// PastMedianTime returns the past median time from the PoV of the
 	// passed block header. The past median time is the median time of the
 	// 11 blocks prior to the passed block header.
-	PastMedianTime(*wire.BlockHeader) (time.Time, error)
+	PastMedianTime(*wire.BlockHeader, *wire.Meta) (time.Time, error)
 }
 
 // ConsensusDeploymentStarter determines if a given consensus deployment has
@@ -31,7 +33,7 @@ type BlockClock interface {
 // passed.
 type ConsensusDeploymentStarter interface {
 	// HasStarted returns true if the consensus deployment has started.
-	HasStarted(*wire.BlockHeader) (bool, error)
+	HasStarted(*wire.BlockHeader, *wire.Meta) (bool, error)
 }
 
 // ClockConsensusDeploymentStarter is a more specialized version of the
@@ -53,7 +55,7 @@ type ClockConsensusDeploymentStarter interface {
 // deployment is no longer eligible for activation.
 type ConsensusDeploymentEnder interface {
 	// HasEnded returns true if the consensus deployment has ended.
-	HasEnded(*wire.BlockHeader) (bool, error)
+	HasEnded(*wire.BlockHeader, *wire.Meta) (bool, error)
 }
 
 // ClockConsensusDeploymentEnder is a more specialized version of the
@@ -96,7 +98,7 @@ func (m *MedianTimeDeploymentStarter) SynchronizeClock(clock BlockClock) {
 }
 
 // HasStarted returns true if the consensus deployment has started.
-func (m *MedianTimeDeploymentStarter) HasStarted(blkHeader *wire.BlockHeader) (bool, error) {
+func (m *MedianTimeDeploymentStarter) HasStarted(blkHeader *wire.BlockHeader, blkMeta *wire.Meta) (bool, error) {
 	switch {
 	// If we haven't yet been synchronized with a block clock, then we
 	// can't tell the time, so we'll fail.
@@ -108,7 +110,7 @@ func (m *MedianTimeDeploymentStarter) HasStarted(blkHeader *wire.BlockHeader) (b
 		return true, nil
 	}
 
-	medianTime, err := m.blockClock.PastMedianTime(blkHeader)
+	medianTime, err := m.blockClock.PastMedianTime(blkHeader, blkMeta)
 	if err != nil {
 		return false, err
 	}
@@ -146,7 +148,7 @@ func NewMedianTimeDeploymentEnder(endTime time.Time) *MedianTimeDeploymentEnder 
 }
 
 // HasEnded returns true if the deployment has ended.
-func (m *MedianTimeDeploymentEnder) HasEnded(blkHeader *wire.BlockHeader) (bool, error) {
+func (m *MedianTimeDeploymentEnder) HasEnded(blkHeader *wire.BlockHeader, blkMeta *wire.Meta) (bool, error) {
 	switch {
 	// If we haven't yet been synchronized with a block clock, then we can't tell
 	// the time, so we'll we haven't yet been synchronized with a block
@@ -159,7 +161,7 @@ func (m *MedianTimeDeploymentEnder) HasEnded(blkHeader *wire.BlockHeader) (bool,
 		return false, nil
 	}
 
-	medianTime, err := m.blockClock.PastMedianTime(blkHeader)
+	medianTime, err := m.blockClock.PastMedianTime(blkHeader, blkMeta)
 	if err != nil {
 		return false, err
 	}

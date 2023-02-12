@@ -47,7 +47,8 @@ const (
 
 	bytePerKb = 1000
 
-	btcPerSatoshi = 1e-8
+	// todo ppc
+	btcPerSatoshi = 1e-6
 )
 
 var (

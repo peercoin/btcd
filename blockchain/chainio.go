@@ -39,6 +39,9 @@ var (
 	// block headers and contextual information.
 	blockIndexBucketName = []byte("blockheaderidx")
 
+	// ppc block meta
+	blockMetaBucketName = []byte("blockmeta")
+
 	// hashIndexBucketName is the name of the db bucket used to house to the
 	// block hash -> block height index.
 	hashIndexBucketName = []byte("hashidx")
@@ -249,8 +252,14 @@ type SpentTxOut struct {
 	// Height is the height of the block containing the creating tx.
 	Height int32
 
+	BlockTime time.Time
+
+	Timestamp time.Time
+
 	// Denotes if the creating tx is a coinbase.
 	IsCoinBase bool
+
+	IsCoinStake bool
 }
 
 // FetchSpendJournal attempts to retrieve the spend journal, or the set of
@@ -283,9 +292,12 @@ func spentTxOutHeaderCode(stxo *SpentTxOut) uint64 {
 	// As described in the serialization format comments, the header code
 	// encodes the height shifted over one bit and the coinbase flag in the
 	// lowest bit.
-	headerCode := uint64(stxo.Height) << 1
+	headerCode := uint64(stxo.Height) << 2
 	if stxo.IsCoinBase {
 		headerCode |= 0x01
+	}
+	if stxo.IsCoinStake {
+		headerCode |= 0x02
 	}
 
 	return headerCode
@@ -340,9 +352,11 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 	// Decode the header code.
 	//
 	// Bit 0 indicates containing transaction is a coinbase.
-	// Bits 1-x encode height of containing transaction.
+	// Bit 1 indicates containing transaction is a coinstake.
+	// Bits 2-x encode height of containing transaction.
 	stxo.IsCoinBase = code&0x01 != 0
-	stxo.Height = int32(code >> 1)
+	stxo.IsCoinStake = code&0x02 != 0
+	stxo.Height = int32(code >> 2)
 	if stxo.Height > 0 {
 		// The legacy v1 spend journal format conditionally tracked the
 		// containing transaction version when the height was non-zero,
@@ -634,9 +648,12 @@ func utxoEntryHeaderCode(entry *UtxoEntry) (uint64, error) {
 	// As described in the serialization format comments, the header code
 	// encodes the height shifted over one bit and the coinbase flag in the
 	// lowest bit.
-	headerCode := uint64(entry.BlockHeight()) << 1
+	headerCode := uint64(entry.BlockHeight()) << 2
 	if entry.IsCoinBase() {
 		headerCode |= 0x01
+	}
+	if entry.IsCoinStake() {
+		headerCode |= 0x02
 	}
 
 	return headerCode, nil
@@ -658,14 +675,18 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 
 	// Calculate the size needed to serialize the entry.
 	size := serializeSizeVLQ(headerCode) +
-		compressedTxOutSize(uint64(entry.Amount()), entry.PkScript())
+		compressedTxOutSize(uint64(entry.Amount()), entry.PkScript()) +
+		serializeSizeVLQ(uint64(entry.Timestamp().Unix())) + // todo ppc check type
+		serializeSizeVLQ(uint64(entry.BlockTime().Unix())) // todo ppc check type
 
 	// Serialize the header code followed by the compressed unspent
-	// transaction output.
+	// transaction output, the timestamp, and the block time.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
 	offset += putCompressedTxOut(serialized[offset:], uint64(entry.Amount()),
 		entry.PkScript())
+	offset += putVLQ(serialized[offset:], uint64(entry.Timestamp().Unix())) // todo ppc check type
+	offset += putVLQ(serialized[offset:], uint64(entry.BlockTime().Unix())) // todo ppc check type
 
 	return serialized, nil
 }
@@ -683,9 +704,11 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	// Decode the header code.
 	//
 	// Bit 0 indicates whether the containing transaction is a coinbase.
-	// Bits 1-x encode height of containing transaction.
+	// Bit 1 indicates whether the containing transaction is a coinstake.
+	// Bits 2-x encode height of containing transaction.
 	isCoinBase := code&0x01 != 0
-	blockHeight := int32(code >> 1)
+	isCoinStake := code&0x02 != 0
+	blockHeight := int32(code >> 2)
 
 	// Decode the compressed unspent transaction output.
 	amount, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
@@ -694,14 +717,35 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 			"utxo: %v", err))
 	}
 
+	// Decode the timestamp.
+	timestampCode, timestampOffset := deserializeVLQ(serialized[offset+compressedTxOutSize(amount, pkScript):])
+	if timestampOffset >= len(serialized) {
+		return nil, errDeserialize(fmt.Sprintf("unexpected end of data after timestamp"+
+			"utxo: %v", err))
+	}
+	timestamp := time.Unix(int64(timestampCode), 0)
+
+	// Decode the block time.
+	blockTimeCode, blockTimeOffset := deserializeVLQ(serialized[offset+compressedTxOutSize(amount, pkScript)+timestampOffset:])
+	if blockTimeOffset >= len(serialized) {
+		return nil, errDeserialize(fmt.Sprintf("unexpected end of data after block time"+
+			"utxo: %v", err))
+	}
+	blockTime := time.Unix(int64(blockTimeCode), 0)
+
 	entry := &UtxoEntry{
 		amount:      int64(amount),
 		pkScript:    pkScript,
 		blockHeight: blockHeight,
+		blockTime:   blockTime,
 		packedFlags: 0,
+		timestamp:   timestamp,
 	}
 	if isCoinBase {
 		entry.packedFlags |= tfCoinBase
+	}
+	if isCoinStake {
+		entry.packedFlags |= tfCoinStake
 	}
 
 	return entry, nil
@@ -850,6 +894,8 @@ func dbPutBlockIndex(dbTx database.Tx, hash *chainhash.Hash, height int32) error
 	var serializedHeight [4]byte
 	byteOrder.PutUint32(serializedHeight[:], uint32(height))
 
+	// todo ppc handle meta?
+
 	// Add the block hash to height mapping to the index.
 	meta := dbTx.Metadata()
 	hashIndex := meta.Bucket(hashIndexBucketName)
@@ -872,6 +918,8 @@ func dbRemoveBlockIndex(dbTx database.Tx, hash *chainhash.Hash, height int32) er
 	if err := hashIndex.Delete(hash[:]); err != nil {
 		return err
 	}
+
+	// todo ppc handle meta?
 
 	// Remove the block height to hash mapping.
 	var serializedHeight [4]byte
@@ -1019,10 +1067,15 @@ func dbPutBestState(dbTx database.Tx, snapshot *BestState, workSum *big.Int) err
 // the genesis block, so it must only be called on an uninitialized database.
 func (b *BlockChain) createChainState() error {
 	// Create a new node from the genesis block and set it as the best node.
-	genesisBlock := btcutil.NewBlock(b.chainParams.GenesisBlock)
+	genesisBlock := btcutil.NewBlockWithMetas(b.chainParams.GenesisBlock, b.chainParams.GenesisMeta)
 	genesisBlock.SetHeight(0)
 	header := &genesisBlock.MsgBlock().Header
-	node := newBlockNode(header, nil)
+	node := newBlockNode(header, genesisBlock.Meta(), nil)
+
+	// todo ppc possibly run
+	//   i guess, since the genesis tx isn't spendable, it doesn't matter
+	// b.calcMintAndMoneySupply(node, genesisBlock)
+
 	node.status = statusDataStored | statusValid
 	b.bestChain.SetTip(node)
 
@@ -1044,6 +1097,11 @@ func (b *BlockChain) createChainState() error {
 
 		// Create the bucket that houses the block index data.
 		_, err := meta.CreateBucket(blockIndexBucketName)
+		if err != nil {
+			return err
+		}
+
+		_, err = meta.CreateBucket(blockMetaBucketName)
 		if err != nil {
 			return err
 		}
@@ -1200,7 +1258,17 @@ func (b *BlockChain) initChainState() error {
 			// Initialize the block node for the block, connect it,
 			// and add it to the block index.
 			node := new(blockNode)
-			initBlockNode(node, header, parent)
+			// todo ppc check sanity, placement.
+			//   obviously still experimental to do it here, rather than later
+			metaBuf, err := GetBlkMeta(dbTx, header.BlockHash())
+			if err != nil {
+				return err
+			}
+			meta, err := btcutil.MetaFromBytes(metaBuf)
+			if err != nil {
+				return err
+			}
+			initBlockNode(node, header, meta, parent)
 			node.status = status
 			b.index.addNode(node)
 
@@ -1329,6 +1397,16 @@ func dbFetchBlockByNode(dbTx database.Tx, node *blockNode) (*btcutil.Block, erro
 	}
 	block.SetHeight(node.height)
 
+	// todo ppc
+	metaBuf, err := GetBlkMeta(dbTx, block.MsgBlock().BlockHash())
+	if err != nil {
+		return nil, err
+	}
+	err = block.MetaFromBytes(metaBuf)
+	if err != nil {
+		return nil, err
+	}
+
 	return block, nil
 }
 
@@ -1347,7 +1425,17 @@ func dbStoreBlockNode(dbTx database.Tx, node *blockNode) error {
 		return err
 	}
 	value := w.Bytes()
-
+	// todo ppc probably (re)move
+	/*
+		sMeta, err := btcutil.MetaToBytes(node.meta)
+		if err != nil {
+			return err
+		}
+		err = setBlkMeta(dbTx, &node.hash, sMeta)
+		if err != nil {
+			return err
+		}
+	*/
 	// Write block header data to block index bucket.
 	blockIndexBucket := dbTx.Metadata().Bucket(blockIndexBucketName)
 	key := blockIndexKey(&node.hash, uint32(node.height))
@@ -1363,6 +1451,15 @@ func dbStoreBlock(dbTx database.Tx, block *btcutil.Block) error {
 	}
 	if hasBlock {
 		return nil
+	}
+	// todo ppc probably move
+	sMeta, err := block.MetaToBytes()
+	if err != nil {
+		return err
+	}
+	err = setBlkMeta(dbTx, block.Hash(), sMeta)
+	if err != nil {
+		return err
 	}
 	return dbTx.StoreBlock(block)
 }

@@ -34,7 +34,7 @@ For binding a local folder to your *btcd* container please read the [Docker docu
 We pass all needed arguments to *btcd* as command line parameters in our *docker-compose.yml* file. It doesn't make sense to create a *btcd.conf* file. This would make things too complicated. Anyhow *btcd* will complain with following log messages when starting. These messages can be ignored:
 
 ```bash
-Error creating a default config file: open /sample-btcd.conf: no such file or directory
+Error creating a default config file: open /sample-ppcd.conf: no such file or directory
 ...
 [WRN] BTCD: open /root/.btcd/btcd.conf: no such file or directory
 ```

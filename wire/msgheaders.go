@@ -71,6 +71,20 @@ func (msg *MsgHeaders) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) 
 				"transactions [count %v]", txCount)
 			return messageError("MsgHeaders.BtcDecode", str)
 		}
+
+		// todo ppc read signature length
+		signatureLength, err := ReadVarInt(r, pver)
+		if err != nil {
+			return err
+		}
+
+		// todo ppc verify signature length
+		if signatureLength > 0 {
+			str := fmt.Sprintf("block headers may not contain "+
+				"signature [length %v]", signatureLength)
+			return messageError("MsgHeaders.BtcDecode", str)
+		}
+
 		msg.AddBlockHeader(bh)
 	}
 
@@ -94,7 +108,7 @@ func (msg *MsgHeaders) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) 
 	}
 
 	for _, bh := range msg.Headers {
-		err := writeBlockHeader(w, pver, bh)
+		err := writeBlockHeader(w, pver, bh, true)
 		if err != nil {
 			return err
 		}
@@ -103,6 +117,12 @@ func (msg *MsgHeaders) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) 
 		// of transactions on header messages.  This is really just an
 		// artifact of the way the original implementation serializes
 		// block headers, but it is required.
+		err = WriteVarInt(w, pver, 0)
+		if err != nil {
+			return err
+		}
+
+		// todo ppc write signature length
 		err = WriteVarInt(w, pver, 0)
 		if err != nil {
 			return err
@@ -123,7 +143,7 @@ func (msg *MsgHeaders) Command() string {
 func (msg *MsgHeaders) MaxPayloadLength(pver uint32) uint32 {
 	// Num headers (varInt) + max allowed headers (header length + 1 byte
 	// for the number of transactions which is always 0).
-	return MaxVarIntPayload + ((MaxBlockHeaderPayload + 1) *
+	return MaxVarIntPayload + ((MaxBlockHeaderPayload + 5) *
 		MaxBlockHeadersPerMsg)
 }
 

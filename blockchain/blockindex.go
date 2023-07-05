@@ -228,6 +228,21 @@ func (node *blockNode) RelativeAncestorCtx(distance int32) HeaderCtx {
 	return ancestor
 }
 
+// peercoin start
+func (node *blockNode) Version() int32 {
+	return node.version
+}
+
+func (node *blockNode) Hash() *chainhash.Hash {
+	return &node.hash
+}
+
+func (node *blockNode) IsProofOfStake() bool {
+	return node.isProofOfStake()
+}
+
+// peercoin end
+
 // RelativeAncestor returns the ancestor block node a relative 'distance' blocks
 // before this node.  This is equivalent to calling Ancestor with the node's
 // height minus provided distance.

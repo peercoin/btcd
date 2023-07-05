@@ -1621,7 +1621,7 @@ func (s *server) pushBlockMsg(sp *serverPeer, hash *chainhash.Hash, doneChan cha
 		// todo ppc verify
 		bestHash := sp.server.chain.GetLastBlockIndex(&best.Hash, false)
 		invMsg := wire.NewMsgInvSizeHint(1)
-		iv := wire.NewInvVect(wire.InvTypeBlock, &bestHash)
+		iv := wire.NewInvVect(wire.InvTypeBlock, bestHash)
 		invMsg.AddInvVect(iv)
 		sp.QueueMessage(invMsg, doneChan)
 		sp.continueHash = nil

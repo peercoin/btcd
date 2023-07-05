@@ -78,16 +78,16 @@ var stakeSeen, stakeSeenOrphan = make(map[Stake]bool), make(map[Stake]bool)
 
 // https://github.com/ppcoin/ppcoin/blob/v0.4.0ppc/src/main.cpp#L894
 // peercoin: find last block index up to pindex
-func (b *BlockChain) getLastBlockIndex(pindex *blockNode, fProofOfStake bool) (block *blockNode) {
+func getLastBlockIndex(pindex HeaderCtx, fProofOfStake bool) HeaderCtx {
 
-	for pindex != nil && pindex.parent != nil && pindex.isProofOfStake() != fProofOfStake {
-		pindex = pindex.parent
+	for pindex != nil && pindex.Parent() != nil && pindex.IsProofOfStake() != fProofOfStake {
+		pindex = pindex.Parent()
 	}
 	return pindex
 }
 
-func (b *BlockChain) GetLastBlockIndex(hash *chainhash.Hash, fProofOfStake bool) chainhash.Hash {
-	return b.getLastBlockIndex(b.index.LookupNode(hash), fProofOfStake).hash
+func (b *BlockChain) GetLastBlockIndex(hash *chainhash.Hash, fProofOfStake bool) *chainhash.Hash {
+	return getLastBlockIndex(b.index.LookupNode(hash), fProofOfStake).Hash()
 }
 
 // calcNextRequiredDifficulty calculates the required difficulty for the block
@@ -96,38 +96,38 @@ func (b *BlockChain) GetLastBlockIndex(hash *chainhash.Hash, fProofOfStake bool)
 // the exported version uses the current best chain as the previous block node
 // while this function accepts any block node.
 // Peercoin https://github.com/ppcoin/ppcoin/blob/v0.4.0ppc/src/main.cpp#L902
-func (b *BlockChain) calcNextRequiredDifficultyPPC(lastNode *blockNode, proofOfStake bool) (uint32, error) {
+func calcNextRequiredDifficultyPPC(lastNode HeaderCtx, proofOfStake bool, c ChainCtx) (uint32, error) {
 
 	if lastNode == nil {
-		return b.chainParams.PowLimitBits, nil // genesis block
+		return c.ChainParams().PowLimitBits, nil // genesis block
 	}
 
-	prev := b.getLastBlockIndex(lastNode, proofOfStake)
-	if prev.hash.IsEqual(b.chainParams.GenesisHash) {
-		return b.chainParams.InitialHashTargetBits, nil // first block
+	prev := getLastBlockIndex(lastNode, proofOfStake)
+	if prev.Hash().IsEqual(c.ChainParams().GenesisHash) {
+		return c.ChainParams().InitialHashTargetBits, nil // first block
 	}
-	prevParent := prev.parent
-	prevPrev := b.getLastBlockIndex(prevParent, proofOfStake)
-	if prevPrev.hash.IsEqual(b.chainParams.GenesisHash) {
-		return b.chainParams.InitialHashTargetBits, nil // second block
+	prevParent := prev.Parent()
+	prevPrev := getLastBlockIndex(prevParent, proofOfStake)
+	if prevPrev.Hash().IsEqual(c.ChainParams().GenesisHash) {
+		return c.ChainParams().InitialHashTargetBits, nil // second block
 	}
 
-	actualSpacing := prev.timestamp - prevPrev.timestamp
+	actualSpacing := prev.Timestamp() - prevPrev.Timestamp()
 
-	nHypotheticalSpacing := lastNode.timestamp - prev.timestamp
-	if !proofOfStake && IsProtocolV12(b.chainParams, prev) && (nHypotheticalSpacing > actualSpacing) {
+	nHypotheticalSpacing := lastNode.Timestamp() - prev.Timestamp()
+	if !proofOfStake && IsProtocolV12(c.ChainParams(), prev) && (nHypotheticalSpacing > actualSpacing) {
 		actualSpacing = nHypotheticalSpacing
 	}
 
-	newTarget := CompactToBig(prev.bits)
+	newTarget := CompactToBig(prev.Bits())
 	var targetSpacing int64
 	if proofOfStake {
 		targetSpacing = StakeTargetSpacing
 	} else {
-		if IsProtocolV09(b.chainParams, lastNode.timestamp) {
+		if IsProtocolV09(c.ChainParams(), lastNode.Timestamp()) {
 			targetSpacing = StakeTargetSpacing * 6
 		} else {
-			targetSpacing = minInt64(TargetSpacingWorkMax, StakeTargetSpacing*(int64(1+lastNode.height-prev.height)))
+			targetSpacing = minInt64(TargetSpacingWorkMax, StakeTargetSpacing*(int64(1+lastNode.Height()-prev.Height())))
 		}
 	}
 	interval := TargetTimespan / targetSpacing
@@ -139,8 +139,8 @@ func (b *BlockChain) calcNextRequiredDifficultyPPC(lastNode *blockNode, proofOfS
 	newTarget.Mul(newTarget, tmp)
 	newTarget.Div(newTarget, new(big.Int).Mul(intervalPlusOne, targetSpacingBig))
 
-	if newTarget.Cmp(b.chainParams.PowLimit) > 0 {
-		newTarget = b.chainParams.PowLimit
+	if newTarget.Cmp(c.ChainParams().PowLimit) > 0 {
+		newTarget = c.ChainParams().PowLimit
 	}
 
 	return BigToCompact(newTarget), nil
@@ -474,10 +474,12 @@ func bigToShaHash(value *big.Int) (*chainhash.Hash, error) {
 // PPCGetLastProofOfWorkReward
 // Export required, used in ppcwallet CreateCoinStake method
 // todo ppc unused -> ppcGetLastProofOfWorkRewardMsg in netsync
+/*
 func (b *BlockChain) PPCGetLastProofOfWorkReward() (subsidy int64) {
 	lastPOWNode := b.getLastBlockIndex(b.bestChain.Tip(), false)
 	return PPCGetProofOfWorkReward(lastPOWNode.bits, lastPOWNode.timestamp, b.chainParams)
 }
+*/
 
 // ppcGetProofOfWorkReward is Peercoin's validate.go:CalcBlockSubsidy(...)
 // counterpart.

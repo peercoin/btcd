@@ -914,24 +914,24 @@ func (b *BlockChain) checkStakeModifierCheckpoints(
 	return true
 }
 
-func IsSuperMajority(minVersion int32, pstart *blockNode, nRequired uint64, nToCheck uint64) bool {
+func IsSuperMajority(minVersion int32, pstart HeaderCtx, nRequired uint64, nToCheck uint64) bool {
 	return HowSuperMajority(minVersion, pstart, nRequired, nToCheck) >= nRequired
 }
 
-func HowSuperMajority(minVersion int32, pstart *blockNode, nRequired uint64, nToCheck uint64) uint64 {
+func HowSuperMajority(minVersion int32, pstart HeaderCtx, nRequired uint64, nToCheck uint64) uint64 {
 	numFound := uint64(0)
 	iterNode := pstart
 	for i := uint64(0); i < nToCheck && numFound < nRequired && iterNode != nil; {
-		if !iterNode.isProofOfStake() {
-			if iterNode.parent == nil {
+		if !iterNode.IsProofOfStake() {
+			if iterNode.Parent() == nil {
 				break
 			}
-			iterNode = iterNode.parent
+			iterNode = iterNode.Parent()
 			continue
 		}
 
 		// This node has a version that is at least the minimum version.
-		if iterNode.version >= minVersion {
+		if iterNode.Version() >= minVersion {
 			numFound++
 		}
 
@@ -940,10 +940,10 @@ func HowSuperMajority(minVersion int32, pstart *blockNode, nRequired uint64, nTo
 		// dynamically create previous block nodes as needed.  This
 		// helps allow only the pieces of the chain that are needed
 		// to remain in memory.
-		if iterNode.parent == nil {
+		if iterNode.Parent() == nil {
 			break
 		}
-		iterNode = iterNode.parent
+		iterNode = iterNode.Parent()
 		i++
 	}
 

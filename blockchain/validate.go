@@ -481,12 +481,10 @@ func CheckBlockHeaderSanity(header *wire.BlockHeader, fProofOfStake bool, powLim
 //
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkBlockHeaderSanity.
-func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
+func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSource MedianTimeSource, flags BehaviorFlags) error {
 	msgBlock := block.MsgBlock()
 	header := &msgBlock.Header
-	// todo ppc merge
-	// 	err := checkBlockHeaderSanity(header, msgBlock.IsProofOfStake(), chainParams.PowLimit, timeSource, flags)
-	err := CheckBlockHeaderSanity(header, powLimit, timeSource, flags)
+	err := CheckBlockHeaderSanity(header, msgBlock.IsProofOfStake(), chainParams.PowLimit, timeSource, flags)
 	if err != nil {
 		return err
 	}
@@ -595,8 +593,8 @@ func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource Median
 
 // CheckBlockSanity performs some preliminary checks on a block to ensure it is
 // sane before continuing with block processing.  These checks are context free.
-func CheckBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource MedianTimeSource) error {
-	return checkBlockSanity(block, powLimit, timeSource, BFNone)
+func CheckBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSource MedianTimeSource) error {
+	return checkBlockSanity(block, chainParams, timeSource, BFNone)
 }
 
 // ExtractCoinbaseHeight attempts to extract the height of the block from the
@@ -707,14 +705,8 @@ func CheckBlockHeaderContext(header *wire.BlockHeader, prevNode HeaderCtx,
 		// Ensure the difficulty specified in the block header matches
 		// the calculated difficulty based on the previous block and
 		// difficulty retarget rules.
-		/* todo ppc merge
-			// todo ppc looks like we're running this twice at the moment
-			expectedDifficulty, err := b.calcNextRequiredDifficultyPPC(prevNode,
-				(header.Flags&FBlockProofOfStake) > 0)
-		 */
-		expectedDifficulty, err := calcNextRequiredDifficulty(
-			prevNode, header.Timestamp, c,
-		)
+		expectedDifficulty, err := calcNextRequiredDifficultyPPC(prevNode,
+			(header.Flags&FBlockProofOfStake) > 0, c)
 		if err != nil {
 			return err
 		}
@@ -730,12 +722,12 @@ func CheckBlockHeaderContext(header *wire.BlockHeader, prevNode HeaderCtx,
 		medianTime := CalcPastMedianTime(prevNode)
 
 		var maxFutureBlockTime int64 // todo ppc verify
-		if IsProtocolV09(chainParams, header.Timestamp.Unix()) {
+		if IsProtocolV09(c.ChainParams(), header.Timestamp.Unix()) {
 			maxFutureBlockTime = MaxFutureBlockTime
 		} else {
 			maxFutureBlockTime = MaxFutureBlockTimePrev09
 		}
-		if !header.Timestamp.After(medianTime) || header.Timestamp.Unix()+maxFutureBlockTime < prevNode.timestamp {
+		if !header.Timestamp.After(medianTime) || header.Timestamp.Unix()+maxFutureBlockTime < prevNode.Timestamp() {
 			str := "block timestamp of %v is not after expected %v"
 			str = fmt.Sprintf(str, header.Timestamp, medianTime)
 			return ruleError(ErrTimeTooOld, str)
@@ -748,8 +740,8 @@ func CheckBlockHeaderContext(header *wire.BlockHeader, prevNode HeaderCtx,
 
 	// Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
 	// check for version 2, 3 and 4 upgrades
-	if header.Version < 2 && IsProtocolV06(b.chainParams, prevNode) ||
-		header.Version < 4 && IsProtocolV12(b.chainParams, prevNode) {
+	if header.Version < 2 && IsProtocolV06(c.ChainParams(), prevNode) ||
+		header.Version < 4 && IsProtocolV12(c.ChainParams(), prevNode) {
 		str := fmt.Sprintf("bad block version=%d at height %d", header.Version, blockHeight)
 		return ruleError(ErrInvalidHeader, str)
 	}
@@ -821,7 +813,7 @@ func (b *BlockChain) checkBlockContext(block *btcutil.Block, prevNode *blockNode
 		// timestamps for all lock-time based checks.
 		// blockTime := header.Timestamp
 		//if csvState == ThresholdActive {
-		blockTime = CalcPastMedianTime(prevNode)
+		blockTime := CalcPastMedianTime(prevNode)
 		//}
 
 		// The height of this block is one more than the referenced
@@ -1438,7 +1430,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *btcutil.Block) error {
 		return ruleError(ErrPrevBlockNotBest, str)
 	}
 
-	err := checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
+	err := checkBlockSanity(block, b.chainParams, b.timeSource, flags)
 	if err != nil {
 		return err
 	}

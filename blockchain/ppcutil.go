@@ -140,14 +140,14 @@ func IsProtocolV05(chainParams *chaincfg.Params, nTime int64) bool {
 	return nTime >= v05SwitchTime
 }
 
-func IsProtocolV06(chainParams *chaincfg.Params, pindexPrev *blockNode) bool {
+func IsProtocolV06(chainParams *chaincfg.Params, pindexPrev HeaderCtx) bool {
 	var v06SwitchTime int64
 	if chainParams == &chaincfg.TestNet3Params {
 		v06SwitchTime = nProtocolV06TestSwitchTime
 	} else {
 		v06SwitchTime = nProtocolV06SwitchTime
 	}
-	if pindexPrev.timestamp < v06SwitchTime {
+	if pindexPrev.Timestamp() < v06SwitchTime {
 		return false
 	}
 
@@ -206,7 +206,7 @@ func IsProtocolV10(chainParams *chaincfg.Params, nTime int64) bool {
 	return nTime >= v10SwitchTime
 }
 
-func IsProtocolV12(chainParams *chaincfg.Params, pindexPrev *blockNode) bool {
+func IsProtocolV12(chainParams *chaincfg.Params, pindexPrev HeaderCtx) bool {
 	// todo ppc couple of spots missing this check
 	var switchTime int64
 	if chainParams == &chaincfg.TestNet3Params {
@@ -214,7 +214,7 @@ func IsProtocolV12(chainParams *chaincfg.Params, pindexPrev *blockNode) bool {
 	} else {
 		switchTime = nProtocolV12SwitchTime
 	}
-	if pindexPrev.timestamp < switchTime {
+	if pindexPrev.Timestamp() < switchTime {
 		return false
 	}
 

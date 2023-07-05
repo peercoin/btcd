@@ -52,4 +52,11 @@ type HeaderCtx interface {
 	// RelativeAncestorCtx returns the header's ancestor that is distance
 	// blocks before it in the chain.
 	RelativeAncestorCtx(distance int32) HeaderCtx
+
+	// peercoin start
+	Version() int32
+
+	Hash() *chainhash.Hash
+
+	IsProofOfStake() bool
 }

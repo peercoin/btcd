@@ -10,6 +10,7 @@ import (
 	"io"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/davecgh/go-spew/spew"
@@ -17,11 +18,11 @@ import (
 )
 
 // TestTx tests the MsgTx API.
-func TestTx(t *testing.T) {
+func TestTx(t *testing.T) { // todo ppc update / test for timestamp
 	pver := ProtocolVersion
 
 	// Block 100000 hash.
-	hashStr := "3ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"
+	hashStr := "3ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506" // todo ppc ???
 	hash, err := chainhash.NewHashFromStr(hashStr)
 	if err != nil {
 		t.Errorf("NewHashFromStr: %v", err)
@@ -29,7 +30,7 @@ func TestTx(t *testing.T) {
 
 	// Ensure the command is expected value.
 	wantCmd := "tx"
-	msg := NewMsgTx(1)
+	msg := NewMsgTx(1, time.Unix(time.Now().Unix(), 0))
 	if cmd := msg.Command(); cmd != wantCmd {
 		t.Errorf("NewMsgAddr: wrong command - got %v want %v",
 			cmd, wantCmd)
@@ -137,8 +138,8 @@ func TestTx(t *testing.T) {
 
 // TestTxHash tests the ability to generate the hash of a transaction accurately.
 func TestTxHash(t *testing.T) {
-	// Hash of first transaction from block 113875.
-	hashStr := "f051e59b5e2503ac626d03aaeac8ab7be2d72ba4b7e97119c5852d70d52dcb86"
+	// Hash of first transaction from block 113876.
+	hashStr := "f07794cedc4be711aee6a470f7f0bf38c48c37ff4ff1bb0a549519ce555a16f9"
 	wantHash, err := chainhash.NewHashFromStr(hashStr)
 	if err != nil {
 		t.Errorf("NewHashFromStr: %v", err)
@@ -146,28 +147,31 @@ func TestTxHash(t *testing.T) {
 	}
 
 	// First transaction from block 113875.
-	msgTx := NewMsgTx(1)
+	msgTx := NewMsgTx(1, time.Unix(0x53827bd6, 0))
+	// msgTx.Timestamp = time.Unix(0x53827bd6, 0) // 1401060310
 	txIn := TxIn{
 		PreviousOutPoint: OutPoint{
 			Hash:  chainhash.Hash{},
 			Index: 0xffffffff,
 		},
-		SignatureScript: []byte{0x04, 0x31, 0xdc, 0x00, 0x1b, 0x01, 0x62},
-		Sequence:        0xffffffff,
+		SignatureScript: []byte{
+			0x03, 0xd3, 0xbc, 0x01, 0x06, 0x2f, 0x50, 0x32,
+			0x53, 0x48, 0x2f, 0x04, 0xc3, 0x7b, 0x82, 0x53,
+			0x08, 0x08, 0x0b, 0xcc, 0x02, 0x0a, 0x10, 0x00,
+			0x00, 0x09, 0x2f, 0x73, 0x74, 0x72, 0x61, 0x74,
+			0x75, 0x6d, 0x2f,
+		},
+		Sequence: 0x00,
 	}
 	txOut := TxOut{
-		Value: 5000000000,
+		Value: 86350000,
 		PkScript: []byte{
-			0x41, // OP_DATA_65
-			0x04, 0xd6, 0x4b, 0xdf, 0xd0, 0x9e, 0xb1, 0xc5,
-			0xfe, 0x29, 0x5a, 0xbd, 0xeb, 0x1d, 0xca, 0x42,
-			0x81, 0xbe, 0x98, 0x8e, 0x2d, 0xa0, 0xb6, 0xc1,
-			0xc6, 0xa5, 0x9d, 0xc2, 0x26, 0xc2, 0x86, 0x24,
-			0xe1, 0x81, 0x75, 0xe8, 0x51, 0xc9, 0x6b, 0x97,
-			0x3d, 0x81, 0xb0, 0x1c, 0xc3, 0x1f, 0x04, 0x78,
-			0x34, 0xbc, 0x06, 0xd6, 0xd6, 0xed, 0xf6, 0x20,
-			0xd1, 0x84, 0x24, 0x1a, 0x6a, 0xed, 0x8b, 0x63,
-			0xa6, // 65-byte signature
+			0x21, // OP_DATA_33
+			0x03, 0xf0, 0x03, 0x41, 0xeb, 0xdf, 0xb4, 0x72,
+			0x3f, 0xda, 0xce, 0x83, 0x80, 0xd8, 0xcf, 0x5e,
+			0x0b, 0x7b, 0xed, 0xdb, 0xb5, 0xdc, 0x6d, 0xf7,
+			0xdc, 0xf0, 0xe1, 0xac, 0xdb, 0xaa, 0x85, 0x48,
+			0x29, // 33-byte signature
 			0xac, // OP_CHECKSIG
 		},
 	}
@@ -186,13 +190,14 @@ func TestTxHash(t *testing.T) {
 // TestTxSha tests the ability to generate the wtxid, and txid of a transaction
 // with witness inputs accurately.
 func TestWTxSha(t *testing.T) {
-	hashStrTxid := "0f167d1385a84d1518cfee208b653fc9163b605ccf1b75347e2850b3e2eb19f3"
+	// todo ppc no reference tx here just yet
+	hashStrTxid := "a920b5ecbe45b8261789af5071f86263be4270fbe14e2998272c2d14ac404675"
 	wantHashTxid, err := chainhash.NewHashFromStr(hashStrTxid)
 	if err != nil {
 		t.Errorf("NewShaHashFromStr: %v", err)
 		return
 	}
-	hashStrWTxid := "0858eab78e77b6b033da30f46699996396cf48fcf625a783c85a51403e175e74"
+	hashStrWTxid := "15ed9bea05d879b44c82dd424d909cbc6552fb37674e50ee2898ce828abdc997"
 	wantHashWTxid, err := chainhash.NewHashFromStr(hashStrWTxid)
 	if err != nil {
 		t.Errorf("NewShaHashFromStr: %v", err)
@@ -200,7 +205,7 @@ func TestWTxSha(t *testing.T) {
 	}
 
 	// From block 23157 in a past version of segnet.
-	msgTx := NewMsgTx(1)
+	msgTx := NewMsgTx(1, time.Unix(0, 0))
 	txIn := TxIn{
 		PreviousOutPoint: OutPoint{
 			Hash: chainhash.Hash{
@@ -264,10 +269,11 @@ func TestWTxSha(t *testing.T) {
 // of transaction inputs and outputs and protocol versions.
 func TestTxWire(t *testing.T) {
 	// Empty tx message.
-	noTx := NewMsgTx(1)
+	noTx := NewMsgTx(1, time.Unix(0, 0))
 	noTx.Version = 1
 	noTxEncoded := []byte{
 		0x01, 0x00, 0x00, 0x00, // Version
+		0x00, 0x00, 0x00, 0x00, // Timestamp
 		0x00,                   // Varint for number of input transactions
 		0x00,                   // Varint for number of output transactions
 		0x00, 0x00, 0x00, 0x00, // Lock time
@@ -419,29 +425,29 @@ func TestTxWireErrors(t *testing.T) {
 		readErr  error           // Expected read error
 	}{
 		// Force error in version.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 0, io.ErrShortWrite, io.EOF},
-		// Force error in number of transaction inputs.
 		{multiTx, multiTxEncoded, pver, BaseEncoding, 4, io.ErrShortWrite, io.EOF},
+		// Force error in number of transaction inputs.
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 8, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input previous block hash.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 5, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 9, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input previous block output index.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 37, io.ErrShortWrite, io.EOF},
-		// Force error in transaction input signature script length.
 		{multiTx, multiTxEncoded, pver, BaseEncoding, 41, io.ErrShortWrite, io.EOF},
+		// Force error in transaction input signature script length.
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 45, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input signature script.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 42, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 46, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input sequence.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 49, io.ErrShortWrite, io.EOF},
-		// Force error in number of transaction outputs.
 		{multiTx, multiTxEncoded, pver, BaseEncoding, 53, io.ErrShortWrite, io.EOF},
+		// Force error in number of transaction outputs.
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 57, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output value.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 54, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 58, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output pk script length.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 62, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 66, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output pk script.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 63, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 67, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output lock time.
-		{multiTx, multiTxEncoded, pver, BaseEncoding, 206, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, pver, BaseEncoding, 210, io.ErrShortWrite, io.EOF},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -469,10 +475,11 @@ func TestTxWireErrors(t *testing.T) {
 
 // TestTxSerialize tests MsgTx serialize and deserialize.
 func TestTxSerialize(t *testing.T) {
-	noTx := NewMsgTx(1)
+	noTx := NewMsgTx(1, time.Unix(0, 0))
 	noTx.Version = 1
 	noTxEncoded := []byte{
 		0x01, 0x00, 0x00, 0x00, // Version
+		0x00, 0x00, 0x00, 0x00, // Timestamp
 		0x00,                   // Varint for number of input transactions
 		0x00,                   // Varint for number of output transactions
 		0x00, 0x00, 0x00, 0x00, // Lock time
@@ -576,30 +583,32 @@ func TestTxSerializeErrors(t *testing.T) {
 		writeErr error  // Expected write error
 		readErr  error  // Expected read error
 	}{
+		// todo ppc we probably shouldn't need to move those up
+		//      if safe, modify the fixed reader instead
 		// Force error in version.
-		{multiTx, multiTxEncoded, 0, io.ErrShortWrite, io.EOF},
-		// Force error in number of transaction inputs.
 		{multiTx, multiTxEncoded, 4, io.ErrShortWrite, io.EOF},
+		// Force error in number of transaction inputs.
+		{multiTx, multiTxEncoded, 8, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input previous block hash.
-		{multiTx, multiTxEncoded, 5, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 9, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input previous block output index.
-		{multiTx, multiTxEncoded, 37, io.ErrShortWrite, io.EOF},
-		// Force error in transaction input signature script length.
 		{multiTx, multiTxEncoded, 41, io.ErrShortWrite, io.EOF},
+		// Force error in transaction input signature script length.
+		{multiTx, multiTxEncoded, 45, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input signature script.
-		{multiTx, multiTxEncoded, 42, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 46, io.ErrShortWrite, io.EOF},
 		// Force error in transaction input sequence.
-		{multiTx, multiTxEncoded, 49, io.ErrShortWrite, io.EOF},
-		// Force error in number of transaction outputs.
 		{multiTx, multiTxEncoded, 53, io.ErrShortWrite, io.EOF},
+		// Force error in number of transaction outputs.
+		{multiTx, multiTxEncoded, 57, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output value.
-		{multiTx, multiTxEncoded, 54, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 58, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output pk script length.
-		{multiTx, multiTxEncoded, 62, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 66, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output pk script.
-		{multiTx, multiTxEncoded, 63, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 67, io.ErrShortWrite, io.EOF},
 		// Force error in transaction output lock time.
-		{multiTx, multiTxEncoded, 206, io.ErrShortWrite, io.EOF},
+		{multiTx, multiTxEncoded, 210, io.ErrShortWrite, io.EOF},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -647,6 +656,7 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
+				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, // Varint for number of input transactions
 			}, pver, BaseEncoding, txVer, &MessageError{},
@@ -656,6 +666,7 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
+				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x00, // Varint for number of input transactions
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, // Varint for number of output transactions
@@ -667,6 +678,7 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
+				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x01, // Varint for number of input transactions
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -683,6 +695,7 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
+				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x01, // Varint for number of input transactions
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -726,7 +739,7 @@ func TestTxOverflowErrors(t *testing.T) {
 // various transactions is accurate.
 func TestTxSerializeSizeStripped(t *testing.T) {
 	// Empty tx message.
-	noTx := NewMsgTx(1)
+	noTx := NewMsgTx(1, time.Unix(0, 0))
 	noTx.Version = 1
 
 	tests := []struct {
@@ -734,15 +747,15 @@ func TestTxSerializeSizeStripped(t *testing.T) {
 		size int    // Expected serialized size
 	}{
 		// No inputs or outpus.
-		{noTx, 10},
+		{noTx, 14},
 
 		// Transcaction with an input and an output.
-		{multiTx, 210},
+		{multiTx, 214},
 
 		// Transaction with an input which includes witness data, and
 		// one output. Note that this uses SerializeSizeStripped which
 		// excludes the additional bytes due to witness data encoding.
-		{multiWitnessTx, 82},
+		{multiWitnessTx, 86},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -765,7 +778,7 @@ func TestTxWitnessSize(t *testing.T) {
 	}{
 		// Transaction with an input which includes witness data, and
 		// one output.
-		{multiWitnessTx, 190},
+		{multiWitnessTx, 194},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -851,7 +864,8 @@ func TestTxOutPointFromString(t *testing.T) {
 
 // multiTx is a MsgTx with an input and output and used in various tests.
 var multiTx = &MsgTx{
-	Version: 1,
+	Version:   1,
+	Timestamp: time.Unix(0, 0),
 	TxIn: []*TxIn{
 		{
 			PreviousOutPoint: OutPoint{
@@ -905,6 +919,7 @@ var multiTx = &MsgTx{
 // 60002 and is used in the various tests.
 var multiTxEncoded = []byte{
 	0x01, 0x00, 0x00, 0x00, // Version
+	0x00, 0x00, 0x00, 0x00, // Timestamp
 	0x01, // Varint for number of input transactions
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -946,12 +961,13 @@ var multiTxEncoded = []byte{
 
 // multiTxPkScriptLocs is the location information for the public key scripts
 // located in multiTx.
-var multiTxPkScriptLocs = []int{63, 139}
+var multiTxPkScriptLocs = []int{67, 143}
 
 // multiWitnessTx is a MsgTx with an input with witness data, and an
 // output used in various tests.
 var multiWitnessTx = &MsgTx{
-	Version: 1,
+	Version:   1,
+	Timestamp: time.Unix(0, 0),
 	TxIn: []*TxIn{
 		{
 			PreviousOutPoint: OutPoint{
@@ -1006,6 +1022,7 @@ var multiWitnessTx = &MsgTx{
 // tests.
 var multiWitnessTxEncoded = []byte{
 	0x1, 0x0, 0x0, 0x0, // Version
+	0x0, 0x0, 0x0, 0x0, // Timestamp
 	TxFlagMarker, // Marker byte indicating 0 inputs, or a segwit encoded tx
 	WitnessFlag,  // Flag byte
 	0x1,          // Varint for number of inputs
@@ -1049,6 +1066,7 @@ var multiWitnessTxEncoded = []byte{
 // being set to 0x01, the flag is 0x00, which should trigger a decoding error.
 var multiWitnessTxEncodedNonZeroFlag = []byte{
 	0x1, 0x0, 0x0, 0x0, // Version
+	0x0, 0x0, 0x0, 0x0, // Timestamp
 	TxFlagMarker, // Marker byte indicating 0 inputs, or a segwit encoded tx
 	0x0,          // Incorrect flag byte (should be 0x01)
 	0x1,          // Varint for number of inputs
@@ -1089,4 +1107,4 @@ var multiWitnessTxEncodedNonZeroFlag = []byte{
 
 // multiTxPkScriptLocs is the location information for the public key scripts
 // located in multiWitnessTx.
-var multiWitnessTxPkScriptLocs = []int{58}
+var multiWitnessTxPkScriptLocs = []int{62}

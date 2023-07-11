@@ -923,10 +923,10 @@ func (msg *MsgTx) PkScriptLocs() []int {
 	// The starting offset in the serialized transaction of the first
 	// transaction output is:
 	//
-	// Version 4 bytes + serialized varint size for the number of
+	// Version 4 bytes + Timestamp 4 bytes + serialized varint size for the number of
 	// transaction inputs and outputs + serialized size of each transaction
 	// input.
-	n := 4 + VarIntSerializeSize(uint64(len(msg.TxIn))) +
+	n := 4 + 4 + VarIntSerializeSize(uint64(len(msg.TxIn))) +
 		VarIntSerializeSize(uint64(numTxOut))
 
 	// If this transaction has a witness input, the an additional two bytes
@@ -959,10 +959,10 @@ func (msg *MsgTx) PkScriptLocs() []int {
 // are no transaction inputs or outputs.  Also, the lock time is set to zero
 // to indicate the transaction is valid immediately as opposed to some time in
 // future.
-func NewMsgTx(version int32) *MsgTx {
+func NewMsgTx(version int32, timeStamp time.Time) *MsgTx {
 	return &MsgTx{
 		Version:   version,
-		Timestamp: time.Unix(time.Now().Unix(), 0),
+		Timestamp: timeStamp,
 		TxIn:      make([]*TxIn, 0, defaultTxInOutAlloc),
 		TxOut:     make([]*TxOut, 0, defaultTxInOutAlloc),
 	}

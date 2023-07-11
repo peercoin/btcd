@@ -35,7 +35,7 @@ func TestTx(t *testing.T) {
 	}
 
 	// Hash for block 100,000 transaction 0.
-	wantHashStr := "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
+	wantHashStr := "a7b523fe1b4fc1c355a2b319af979f2d07f9f6261135f99c7002faa4320590f3"
 	wantHash, err := chainhash.NewHashFromStr(wantHashStr)
 	if err != nil {
 		t.Errorf("NewHashFromStr: %v", err)

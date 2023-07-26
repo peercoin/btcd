@@ -8,7 +8,6 @@ package txscript_test
 import (
 	"encoding/hex"
 	"fmt"
-
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -25,7 +24,7 @@ func ExamplePayToAddrScript() {
 	// which is useful to ensure the accuracy of the address and determine
 	// the address type.  It is also required for the upcoming call to
 	// PayToAddrScript.
-	addressStr := "12gpXQVcCL2qhTNQgyLVdCFG2Qs2px98nV"
+	addressStr := "PAGzgNtTFFX2gJ3B33f2J6DXeA2uzHv1vG"
 	address, err := btcutil.DecodeAddress(addressStr, &chaincfg.MainNetParams)
 	if err != nil {
 		fmt.Println(err)
@@ -76,7 +75,7 @@ func ExampleExtractPkScriptAddrs() {
 
 	// Output:
 	// Script Class: pubkeyhash
-	// Addresses: [12gpXQVcCL2qhTNQgyLVdCFG2Qs2px98nV]
+	// Addresses: [PAGzgNtTFFX2gJ3B33f2J6DXeA2uzHv1vG]
 	// Required Signatures: 1
 }
 

@@ -235,7 +235,7 @@ func TestPeerConnection(t *testing.T) {
 		UserAgentVersion:  "1.0",
 		UserAgentComments: []string{"comment"},
 		ChainParams:       &chaincfg.MainNetParams,
-		ProtocolVersion:   wire.RejectVersion, // Configure with older version
+		ProtocolVersion:   70017, // Configure with older version
 		Services:          0,
 		TrickleInterval:   time.Second * 10,
 		AllowSelfConns:    true,
@@ -254,7 +254,7 @@ func TestPeerConnection(t *testing.T) {
 	wantStats1 := peerStats{
 		wantUserAgent:       wire.DefaultUserAgent + "peer:1.0(comment)/",
 		wantServices:        0,
-		wantProtocolVersion: wire.RejectVersion,
+		wantProtocolVersion: 70017,
 		wantConnected:       true,
 		wantVersionKnown:    true,
 		wantVerAckReceived:  true,
@@ -262,14 +262,14 @@ func TestPeerConnection(t *testing.T) {
 		wantLastPingNonce:   uint64(0),
 		wantLastPingMicros:  int64(0),
 		wantTimeOffset:      int64(0),
-		wantBytesSent:       167, // 143 version + 24 verack
-		wantBytesReceived:   167,
+		wantBytesSent:       191, // 143 version + 24 verack
+		wantBytesReceived:   191,
 		wantWitnessEnabled:  false,
 	}
 	wantStats2 := peerStats{
 		wantUserAgent:       wire.DefaultUserAgent + "peer:1.0(comment)/",
 		wantServices:        wire.SFNodeNetwork | wire.SFNodeWitness,
-		wantProtocolVersion: wire.RejectVersion,
+		wantProtocolVersion: 70017,
 		wantConnected:       true,
 		wantVersionKnown:    true,
 		wantVerAckReceived:  true,
@@ -277,8 +277,8 @@ func TestPeerConnection(t *testing.T) {
 		wantLastPingNonce:   uint64(0),
 		wantLastPingMicros:  int64(0),
 		wantTimeOffset:      int64(0),
-		wantBytesSent:       167, // 143 version + 24 verack
-		wantBytesReceived:   167,
+		wantBytesSent:       191, // 143 version + 24 verack
+		wantBytesReceived:   191,
 		wantWitnessEnabled:  true,
 	}
 
@@ -290,7 +290,7 @@ func TestPeerConnection(t *testing.T) {
 			"basic handshake",
 			func() (*peer.Peer, *peer.Peer, error) {
 				inPeer := peer.NewInboundPeer(peer1Cfg)
-				outPeer, err := peer.NewOutboundPeer(peer2Cfg, "10.0.0.2:8333")
+				outPeer, err := peer.NewOutboundPeer(peer2Cfg, "10.0.0.2:9903")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -314,7 +314,7 @@ func TestPeerConnection(t *testing.T) {
 			"socks proxy",
 			func() (*peer.Peer, *peer.Peer, error) {
 				inPeer := peer.NewInboundPeer(peer1Cfg)
-				outPeer, err := peer.NewOutboundPeer(peer2Cfg, "10.0.0.2:8333")
+				outPeer, err := peer.NewOutboundPeer(peer2Cfg, "10.0.0.2:9903")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -465,7 +465,7 @@ func TestPeerListeners(t *testing.T) {
 			verack <- struct{}{}
 		},
 	}
-	outPeer, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:8333")
+	outPeer, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:9903")
 	if err != nil {
 		t.Errorf("NewOutboundPeer: unexpected err %v\n", err)
 		return
@@ -640,9 +640,9 @@ func TestOutboundPeer(t *testing.T) {
 	}
 
 	r, w := io.Pipe()
-	c := &conn{raddr: "10.0.0.1:8333", Writer: w, Reader: r}
+	c := &conn{raddr: "10.0.0.1:9903", Writer: w, Reader: r}
 
-	p, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:8333")
+	p, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:9903")
 	if err != nil {
 		t.Errorf("NewOutboundPeer: unexpected err - %v\n", err)
 		return
@@ -697,8 +697,8 @@ func TestOutboundPeer(t *testing.T) {
 
 	peerCfg.NewestBlock = newestBlock
 	r1, w1 := io.Pipe()
-	c1 := &conn{raddr: "10.0.0.1:8333", Writer: w1, Reader: r1}
-	p1, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:8333")
+	c1 := &conn{raddr: "10.0.0.1:9903", Writer: w1, Reader: r1}
+	p1, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:9903")
 	if err != nil {
 		t.Errorf("NewOutboundPeer: unexpected err - %v\n", err)
 		return
@@ -727,8 +727,8 @@ func TestOutboundPeer(t *testing.T) {
 	peerCfg.ChainParams = &chaincfg.RegressionNetParams
 	peerCfg.Services = wire.SFNodeBloom
 	r2, w2 := io.Pipe()
-	c2 := &conn{raddr: "10.0.0.1:8333", Writer: w2, Reader: r2}
-	p2, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:8333")
+	c2 := &conn{raddr: "10.0.0.1:9903", Writer: w2, Reader: r2}
+	p2, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:9903")
 	if err != nil {
 		t.Errorf("NewOutboundPeer: unexpected err - %v\n", err)
 		return
@@ -783,20 +783,20 @@ func TestUnsupportedVersionPeer(t *testing.T) {
 
 	localNA := wire.NewNetAddressIPPort(
 		net.ParseIP("10.0.0.1"),
-		uint16(8333),
+		uint16(9903),
 		wire.SFNodeNetwork,
 	)
 	remoteNA := wire.NewNetAddressIPPort(
 		net.ParseIP("10.0.0.2"),
-		uint16(8333),
+		uint16(9903),
 		wire.SFNodeNetwork,
 	)
 	localConn, remoteConn := pipe(
-		&conn{laddr: "10.0.0.1:8333", raddr: "10.0.0.2:8333"},
-		&conn{laddr: "10.0.0.2:8333", raddr: "10.0.0.1:8333"},
+		&conn{laddr: "10.0.0.1:9903", raddr: "10.0.0.2:9903"},
+		&conn{laddr: "10.0.0.2:9903", raddr: "10.0.0.1:9903"},
 	)
 
-	p, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:8333")
+	p, err := peer.NewOutboundPeer(peerCfg, "10.0.0.1:9903")
 	if err != nil {
 		t.Fatalf("NewOutboundPeer: unexpected err - %v\n", err)
 	}
@@ -891,7 +891,7 @@ func TestDuplicateVersionMsg(t *testing.T) {
 		Services:         0,
 		AllowSelfConns:   true,
 	}
-	outPeer, err := peer.NewOutboundPeer(peerCfg, "10.0.0.2:8333")
+	outPeer, err := peer.NewOutboundPeer(peerCfg, "10.0.0.2:9903")
 	if err != nil {
 		t.Fatalf("NewOutboundPeer: unexpected err: %v\n", err)
 	}
@@ -957,7 +957,7 @@ func TestUpdateLastBlockHeight(t *testing.T) {
 	remotePeerCfg.NewestBlock = func() (*chainhash.Hash, int32, error) {
 		return &chainhash.Hash{}, remotePeerHeight, nil
 	}
-	localPeer, err := peer.NewOutboundPeer(&peerCfg, "10.0.0.2:8333")
+	localPeer, err := peer.NewOutboundPeer(&peerCfg, "10.0.0.2:9903")
 	if err != nil {
 		t.Fatalf("NewOutboundPeer: unexpected err: %v\n", err)
 	}
@@ -1100,7 +1100,7 @@ func TestSendAddrV2Handshake(t *testing.T) {
 			func() (*peer.Peer, *peer.Peer, error) {
 				inPeer := peer.NewInboundPeer(peer1Cfg)
 				outPeer, err := peer.NewOutboundPeer(
-					peer2Cfg, "10.0.0.2:8333",
+					peer2Cfg, "10.0.0.2:9903",
 				)
 				if err != nil {
 					return nil, nil, err
@@ -1131,7 +1131,7 @@ func TestSendAddrV2Handshake(t *testing.T) {
 				peer1Cfg.ProtocolVersion = legacyVersion
 				inPeer := peer.NewInboundPeer(peer1Cfg)
 				outPeer, err := peer.NewOutboundPeer(
-					peer2Cfg, "10.0.0.2:8333",
+					peer2Cfg, "10.0.0.2:9903",
 				)
 				if err != nil {
 					return nil, nil, err
@@ -1161,7 +1161,7 @@ func TestSendAddrV2Handshake(t *testing.T) {
 				legacyVersion := wire.AddrV2Version - 1
 				peer2Cfg.ProtocolVersion = legacyVersion
 				outPeer, err := peer.NewOutboundPeer(
-					peer2Cfg, "10.0.0.2:8333",
+					peer2Cfg, "10.0.0.2:9903",
 				)
 				if err != nil {
 					return nil, nil, err

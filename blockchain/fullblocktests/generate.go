@@ -435,7 +435,7 @@ func additionalTx(tx *wire.MsgTx) func(*wire.MsgBlock) {
 // script which avoids the need to track addresses and signature scripts in the
 // tests.
 func createSpendTx(spend *spendableOut, fee btcutil.Amount) *wire.MsgTx {
-	spendTx := wire.NewMsgTx(1)
+	spendTx := wire.NewMsgTx(3)
 	spendTx.AddTxIn(&wire.TxIn{
 		PreviousOutPoint: spend.prevOut,
 		Sequence:         wire.MaxTxInSequenceNum,
@@ -517,6 +517,7 @@ func (g *testGenerator) nextBlock(blockName string, spend *spendableOut, mungers
 			Nonce:      0, // To be solved.
 		},
 		Transactions: txns,
+		Signature:    []byte{},
 	}
 
 	// Perform any block munging just before solving.  Only recalculate the

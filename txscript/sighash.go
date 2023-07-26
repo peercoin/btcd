@@ -478,7 +478,7 @@ func calcTaprootSignatureHashRaw(sigHashes *TxSigHashes, hType SigHashType,
 		return nil, err
 	}
 	if tx.Version < 3 {
-		err = binary.Write(&sigMsg, binary.LittleEndian, tx.Timestamp)
+		err = binary.Write(&sigMsg, binary.LittleEndian, tx.Timestamp.Unix())
 		if err != nil {
 			return nil, err
 		}

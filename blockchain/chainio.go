@@ -1457,7 +1457,7 @@ func dbStoreBlock(dbTx database.Tx, block *btcutil.Block) error {
 	if err != nil {
 		return err
 	}
-	err = setBlkMeta(dbTx, block.Hash(), sMeta)
+	err = SetBlkMeta(dbTx, block.Hash(), sMeta)
 	if err != nil {
 		return err
 	}

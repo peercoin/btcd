@@ -46,12 +46,12 @@ func TestWalletSvrWsNtfns(t *testing.T) {
 		{
 			name: "btcdconnected",
 			newNtfn: func() (interface{}, error) {
-				return btcjson.NewCmd("btcdconnected", true)
+				return btcjson.NewCmd("ppcdconnected", true)
 			},
 			staticNtfn: func() interface{} {
 				return btcjson.NewBtcdConnectedNtfn(true)
 			},
-			marshalled: `{"jsonrpc":"1.0","method":"btcdconnected","params":[true],"id":null}`,
+			marshalled: `{"jsonrpc":"1.0","method":"ppcdconnected","params":[true],"id":null}`,
 			unmarshalled: &btcjson.BtcdConnectedNtfn{
 				Connected: true,
 			},

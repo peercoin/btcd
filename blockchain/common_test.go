@@ -365,21 +365,23 @@ func newFakeChain(params *chaincfg.Params) *BlockChain {
 		blocksPerRetarget:   int32(targetTimespan / targetTimePerBlock),
 		index:               index,
 		bestChain:           newChainView(node),
-		warningCaches:       newThresholdCaches(vbNumBits),
-		deploymentCaches:    newThresholdCaches(chaincfg.DefinedDeployments),
+		// warningCaches:       newThresholdCaches(vbNumBits),
+		// deploymentCaches:    newThresholdCaches(chaincfg.DefinedDeployments),
 	}
 
-	for _, deployment := range params.Deployments {
-		deploymentStarter := deployment.DeploymentStarter
-		if clockStarter, ok := deploymentStarter.(chaincfg.ClockConsensusDeploymentStarter); ok {
-			clockStarter.SynchronizeClock(b)
-		}
+	/*
+		for _, deployment := range params.Deployments {
+			deploymentStarter := deployment.DeploymentStarter
+			if clockStarter, ok := deploymentStarter.(chaincfg.ClockConsensusDeploymentStarter); ok {
+				clockStarter.SynchronizeClock(b)
+			}
 
-		deploymentEnder := deployment.DeploymentEnder
-		if clockEnder, ok := deploymentEnder.(chaincfg.ClockConsensusDeploymentEnder); ok {
-			clockEnder.SynchronizeClock(b)
+			deploymentEnder := deployment.DeploymentEnder
+			if clockEnder, ok := deploymentEnder.(chaincfg.ClockConsensusDeploymentEnder); ok {
+				clockEnder.SynchronizeClock(b)
+			}
 		}
-	}
+	*/
 
 	return b
 }

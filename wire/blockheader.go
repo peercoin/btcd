@@ -121,6 +121,7 @@ func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
 		(*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce, &bh.Flags)
+	// todo ppc reading flags needs to be optional
 }
 
 // writeBlockHeader writes a bitcoin block header to w.  See Serialize for

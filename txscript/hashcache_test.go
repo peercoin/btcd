@@ -19,7 +19,7 @@ func init() {
 
 // genTestTx creates a random transaction for uses within test cases.
 func genTestTx() (*wire.MsgTx, *MultiPrevOutFetcher, error) {
-	tx := wire.NewMsgTx(2, time.Unix(0, 0))
+	tx := wire.NewMsgTx(2)
 	tx.Version = rand.Int31()
 
 	prevOuts := NewMultiPrevOutFetcher(nil)

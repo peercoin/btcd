@@ -56,7 +56,7 @@ func TestMessage(t *testing.T) {
 	msgInv := NewMsgInv()
 	msgGetData := NewMsgGetData()
 	msgNotFound := NewMsgNotFound()
-	msgTx := NewMsgTx(1, time.Unix(0, 0)) // todo ppc
+	msgTx := NewMsgTx(3) // todo ppc
 	msgPing := NewMsgPing(123123)
 	msgPong := NewMsgPong(123123)
 	msgGetHeaders := NewMsgGetHeaders()
@@ -89,7 +89,7 @@ func TestMessage(t *testing.T) {
 		{msgGetAddr, msgGetAddr, pver, MainNet, 24},
 		{msgAddr, msgAddr, pver, MainNet, 25},
 		{msgGetBlocks, msgGetBlocks, pver, MainNet, 61},
-		{msgBlock, msgBlock, pver, MainNet, 239},
+		{msgBlock, msgBlock, pver, MainNet, 248}, // todo ppc
 		{msgInv, msgInv, pver, MainNet, 25},
 		{msgGetData, msgGetData, pver, MainNet, 25},
 		{msgNotFound, msgNotFound, pver, MainNet, 25},
@@ -103,7 +103,7 @@ func TestMessage(t *testing.T) {
 		{msgFilterAdd, msgFilterAdd, pver, MainNet, 26},
 		{msgFilterClear, msgFilterClear, pver, MainNet, 24},
 		{msgFilterLoad, msgFilterLoad, pver, MainNet, 35},
-		{msgMerkleBlock, msgMerkleBlock, pver, MainNet, 110},
+		{msgMerkleBlock, msgMerkleBlock, pver, MainNet, 114}, // todo ppc
 		{msgReject, msgReject, pver, MainNet, 79},
 		{msgGetCFilters, msgGetCFilters, pver, MainNet, 61},
 		{msgGetCFHeaders, msgGetCFHeaders, pver, MainNet, 61},

@@ -47,6 +47,17 @@ func TestStxoSerialization(t *testing.T) {
 		stxo       SpentTxOut
 		serialized []byte
 	}{
+		/*// From block 1096 in main blockchain.
+		{
+			name: "Spends last output of coinbase",
+			stxo: SpentTxOut{
+				Amount:     2130530000,
+				PkScript:   hexToBytes("483045022100d681e99d15f7152a4e640a2805bd42fd7496fcbfbd7cf5ce2e75c27d3a79ca5702202be478266d7a1509e3bc56d4e370ebd73e6afde7940a304e72adf630b408220901"),
+				IsCoinBase: true,
+				Height:     388,
+			},
+			serialized: hexToBytes("8b1100f483234f483045022100d681e99d15f7152a4e640a2805bd42fd7496fcbfbd7cf5ce2e75c27d3a79ca5702202be478266d7a1509e3bc56d4e370ebd73e6afde7940a304e72adf630b408220901"),
+		},*/
 		// From block 170 in main blockchain.
 		{
 			name: "Spends last output of coinbase",
@@ -56,7 +67,8 @@ func TestStxoSerialization(t *testing.T) {
 				IsCoinBase: true,
 				Height:     9,
 			},
-			serialized: hexToBytes("1300320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+			// todo ppc
+			serialized: hexToBytes("2500320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
@@ -67,7 +79,8 @@ func TestStxoSerialization(t *testing.T) {
 				IsCoinBase: false,
 				Height:     100024,
 			},
-			serialized: hexToBytes("8b99700086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec"),
+			// todo ppc
+			serialized: hexToBytes("97b4600086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
@@ -247,7 +260,8 @@ func TestSpendJournalSerialization(t *testing.T) {
 				}},
 				LockTime: 0,
 			}},
-			serialized: hexToBytes("1300320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+			// todo ppc
+			serialized: hexToBytes("2500320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
@@ -300,7 +314,8 @@ func TestSpendJournalSerialization(t *testing.T) {
 				}},
 				LockTime: 0,
 			}},
-			serialized: hexToBytes("8b99700086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec8b99700091f20f006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
+			// todo ppc
+			serialized: hexToBytes("97b4600086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec97b4600091f20f006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
 		},
 	}
 
@@ -422,7 +437,8 @@ func TestUtxoSerialization(t *testing.T) {
 				blockHeight: 1,
 				packedFlags: tfCoinBase,
 			},
-			serialized: hexToBytes("03320496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52"),
+			// todo ppc
+			serialized: hexToBytes("05320496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c5280fefefefd97c2b7910080fefefefd97c2b79100"),
 		},
 		// From tx in main blockchain:
 		// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098:0
@@ -446,7 +462,8 @@ func TestUtxoSerialization(t *testing.T) {
 				blockHeight: 100001,
 				packedFlags: 0,
 			},
-			serialized: hexToBytes("8b99420700ee8bd501094a7d5ca318da2506de35e1cb025ddc"),
+			// todo ppc
+			serialized: hexToBytes("97b4040700ee8bd501094a7d5ca318da2506de35e1cb025ddc80fefefefd97c2b7910080fefefefd97c2b79100"),
 		},
 		// From tx in main blockchain:
 		// 8131ffb0a2c945ecaf9b9063e59558784f9c3a74741ce6ae2a18d0571dac15bb:1

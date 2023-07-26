@@ -30,7 +30,7 @@ func TestTx(t *testing.T) { // todo ppc update / test for timestamp
 
 	// Ensure the command is expected value.
 	wantCmd := "tx"
-	msg := NewMsgTx(1, time.Unix(time.Now().Unix(), 0))
+	msg := NewMsgTx(1)
 	if cmd := msg.Command(); cmd != wantCmd {
 		t.Errorf("NewMsgAddr: wrong command - got %v want %v",
 			cmd, wantCmd)
@@ -147,7 +147,8 @@ func TestTxHash(t *testing.T) {
 	}
 
 	// First transaction from block 113875.
-	msgTx := NewMsgTx(1, time.Unix(0x53827bd6, 0))
+	msgTx := NewMsgTx(1)
+	msgTx.Timestamp = time.Unix(0x53827bd6, 0)
 	// msgTx.Timestamp = time.Unix(0x53827bd6, 0) // 1401060310
 	txIn := TxIn{
 		PreviousOutPoint: OutPoint{
@@ -205,7 +206,7 @@ func TestWTxSha(t *testing.T) {
 	}
 
 	// From block 23157 in a past version of segnet.
-	msgTx := NewMsgTx(1, time.Unix(0, 0))
+	msgTx := NewMsgTx(1)
 	txIn := TxIn{
 		PreviousOutPoint: OutPoint{
 			Hash: chainhash.Hash{
@@ -269,7 +270,7 @@ func TestWTxSha(t *testing.T) {
 // of transaction inputs and outputs and protocol versions.
 func TestTxWire(t *testing.T) {
 	// Empty tx message.
-	noTx := NewMsgTx(1, time.Unix(0, 0))
+	noTx := NewMsgTx(1)
 	noTx.Version = 1
 	noTxEncoded := []byte{
 		0x01, 0x00, 0x00, 0x00, // Version
@@ -475,7 +476,7 @@ func TestTxWireErrors(t *testing.T) {
 
 // TestTxSerialize tests MsgTx serialize and deserialize.
 func TestTxSerialize(t *testing.T) {
-	noTx := NewMsgTx(1, time.Unix(0, 0))
+	noTx := NewMsgTx(1)
 	noTx.Version = 1
 	noTxEncoded := []byte{
 		0x01, 0x00, 0x00, 0x00, // Version
@@ -739,7 +740,7 @@ func TestTxOverflowErrors(t *testing.T) {
 // various transactions is accurate.
 func TestTxSerializeSizeStripped(t *testing.T) {
 	// Empty tx message.
-	noTx := NewMsgTx(1, time.Unix(0, 0))
+	noTx := NewMsgTx(1)
 	noTx.Version = 1
 
 	tests := []struct {

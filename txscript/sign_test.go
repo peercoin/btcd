@@ -1717,7 +1717,7 @@ func TestRawTxInTaprootSignature(t *testing.T) {
 		},
 	})
 	txOut := &wire.TxOut{
-		Value: 1e8, PkScript: pkScript,
+		Value: 1e6, PkScript: pkScript, // todo ppc value
 	}
 	testTx.AddTxOut(txOut)
 
@@ -1824,7 +1824,7 @@ func TestRawTxInTapscriptSignature(t *testing.T) {
 		},
 	})
 	txOut := &wire.TxOut{
-		Value: 1e8, PkScript: p2trScript,
+		Value: 1e6, PkScript: p2trScript, // todo ppc value
 	}
 	testTx.AddTxOut(txOut)
 

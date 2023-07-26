@@ -77,10 +77,10 @@ const (
 	// that any realistically usable transaction must have at least one
 	// input or output, but that is a rule enforced at a higher layer, so
 	// it is intentionally not included here.
-	// Version 4 bytes + Time 4 bytes + Varint number of transaction inputs 1 byte + Varint
+	// Version 4 bytes + Varint number of transaction inputs 1 byte + Varint
 	// number of transaction outputs 1 byte + LockTime 4 bytes + min input
 	// payload + min output payload.
-	minTxPayload = 14
+	minTxPayload = 10
 
 	// freeListMaxScriptSize is the size of each buffer in the free list
 	// that	is used for deserializing scripts from the wire before they are
@@ -959,10 +959,10 @@ func (msg *MsgTx) PkScriptLocs() []int {
 // are no transaction inputs or outputs.  Also, the lock time is set to zero
 // to indicate the transaction is valid immediately as opposed to some time in
 // future.
-func NewMsgTx(version int32, timeStamp time.Time) *MsgTx {
+func NewMsgTx(version int32) *MsgTx {
 	return &MsgTx{
 		Version:   version,
-		Timestamp: timeStamp,
+		Timestamp: time.Unix(0, 0), // peercoin: timestamp should be set manually
 		TxIn:      make([]*TxIn, 0, defaultTxInOutAlloc),
 		TxOut:     make([]*TxOut, 0, defaultTxInOutAlloc),
 	}

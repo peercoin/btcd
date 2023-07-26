@@ -37,7 +37,7 @@ func GetBlkMeta(dbTx database.Tx, hash chainhash.Hash) (rbuf []byte, err error) 
 	return
 }
 
-func setBlkMeta(dbTx database.Tx, hash *chainhash.Hash, buf []byte) error {
+func SetBlkMeta(dbTx database.Tx, hash *chainhash.Hash, buf []byte) error {
 	key := hashMetaToKey(hash)
 	bucket := dbTx.Metadata().Bucket(blockMetaBucketName)
 	err := bucket.Put(key, buf[:])

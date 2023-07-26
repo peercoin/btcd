@@ -58,6 +58,20 @@ func TestErrorCodeStringer(t *testing.T) {
 		{ErrPreviousBlockUnknown, "ErrPreviousBlockUnknown"},
 		{ErrInvalidAncestorBlock, "ErrInvalidAncestorBlock"},
 		{ErrPrevBlockNotBest, "ErrPrevBlockNotBest"},
+		// peercoin errors
+		{ErrProofOfStakeCheck, "ErrProofOfStakeCheck"},
+		{ErrEmptyTxOut, "ErrEmptyTxOut"},
+		{ErrEarlierTimestamp, "ErrEarlierTimestamp"},
+		{ErrBadCoinstakeValue, "ErrBadCoinstakeValue"},
+		{ErrInsufficientFee, "ErrInsufficientFee"},
+		{ErrWrongCoinstakePosition, "ErrWrongCoinstakePosition"},
+		{ErrCoinbaseNotEmpty, "ErrCoinbaseNotEmpty"},
+		{ErrCoinbaseTimeViolation, "ErrCoinbaseTimeViolation"},
+		{ErrCoinstakeTimeViolation, "ErrCoinstakeTimeViolation"},
+		{ErrBlockBeforeTx, "ErrBlockBeforeTx"},
+		{ErrBadBlockSignature, "ErrBadBlockSignature"},
+		{ErrDuplicateStake, "ErrDuplicateStake"},
+		{ErrInvalidHeader, "ErrInvalidHeader"},
 		{0xffff, "Unknown ErrorCode (65535)"},
 	}
 

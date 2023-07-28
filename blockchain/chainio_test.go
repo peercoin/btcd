@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/wire"
@@ -60,36 +61,120 @@ func TestStxoSerialization(t *testing.T) {
 		},*/
 		// From block 170 in main blockchain.
 		{
-			name: "Spends last output of coinbase",
+			name: "Spends last output of coinbase same time",
 			stxo: SpentTxOut{
 				Amount:     5000000000,
+				Timestamp:  time.Unix(1690522348, 0),
+				BlockTime:  time.Unix(1690522348, 0),
 				PkScript:   hexToBytes("410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac"),
 				IsCoinBase: true,
 				Height:     9,
 			},
 			// todo ppc
-			serialized: hexToBytes("2500320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+			serialized: hexToBytes("25003280a3daf14a80a3daf14a0511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
-			name: "Spends last output of non coinbase",
+			name: "Spends last output of non coinbase same time",
 			stxo: SpentTxOut{
 				Amount:     13761000000,
+				Timestamp:  time.Unix(1690522348, 0),
+				BlockTime:  time.Unix(1690522348, 0),
 				PkScript:   hexToBytes("76a914b2fb57eadf61e106a100a7445a8c3f67898841ec88ac"),
 				IsCoinBase: false,
 				Height:     100024,
 			},
 			// todo ppc
-			serialized: hexToBytes("97b4600086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec"),
+			serialized: hexToBytes("97b4600086c64780a3daf14a80a3daf14a00b2fb57eadf61e106a100a7445a8c3f67898841ec"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
-			name: "Does not spend last output, legacy format",
+			name: "Does not spend last output, legacy format same time",
 			stxo: SpentTxOut{
-				Amount:   34405000000,
-				PkScript: hexToBytes("76a9146edbc6c4d31bae9f1ccc38538a114bf42de65e8688ac"),
+				Amount:    34405000000,
+				Timestamp: time.Unix(1690522348, 0),
+				BlockTime: time.Unix(1690522348, 0),
+				PkScript:  hexToBytes("76a9146edbc6c4d31bae9f1ccc38538a114bf42de65e8688ac"),
 			},
-			serialized: hexToBytes("0091f20f006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
+			serialized: hexToBytes("0091f20f80a3daf14a80a3daf14a006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
+		},
+		// From block 170 in main blockchain.
+		{
+			name: "Spends last output of coinbase zero timestamp",
+			stxo: SpentTxOut{
+				Amount:     5000000000,
+				Timestamp: time.Unix(0, 0),
+				BlockTime: time.Unix(1690522348, 0),
+				PkScript:   hexToBytes("410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac"),
+				IsCoinBase: true,
+				Height:     9,
+			},
+			// todo ppc
+			serialized: hexToBytes("25003280fefefefef9fdcdcb5e80a3daf14a0511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+		},
+		// Adapted from block 100025 in main blockchain.
+		{
+			name: "Spends last output of non coinbase zero timestamp",
+			stxo: SpentTxOut{
+				Amount:     13761000000,
+				Timestamp: time.Unix(0, 0),
+				BlockTime: time.Unix(1690522348, 0),
+				PkScript:   hexToBytes("76a914b2fb57eadf61e106a100a7445a8c3f67898841ec88ac"),
+				IsCoinBase: false,
+				Height:     100024,
+			},
+			// todo ppc
+			serialized: hexToBytes("97b4600086c64780fefefefef9fdcdcb5e80a3daf14a00b2fb57eadf61e106a100a7445a8c3f67898841ec"),
+		},
+		// Adapted from block 100025 in main blockchain.
+		{
+			name: "Does not spend last output, legacy format zero timestamp",
+			stxo: SpentTxOut{
+				Amount:    34405000000,
+				Timestamp: time.Unix(0, 0),
+				BlockTime: time.Unix(1690522348, 0),
+				PkScript:  hexToBytes("76a9146edbc6c4d31bae9f1ccc38538a114bf42de65e8688ac"),
+			},
+			serialized: hexToBytes("0091f20f80fefefefef9fdcdcb5e80a3daf14a006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
+		},
+		// From block 170 in main blockchain.
+		{
+			name: "Spends last output of coinbase differing timestamp",
+			stxo: SpentTxOut{
+				Amount:     5000000000,
+				Timestamp:  time.Unix(1690022348, 0),
+				BlockTime:  time.Unix(1690522348, 0),
+				PkScript:   hexToBytes("410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac"),
+				IsCoinBase: true,
+				Height:     9,
+			},
+			// todo ppc
+			serialized: hexToBytes("25003280a3bcaf2a80a3daf14a0511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+		},
+		// Adapted from block 100025 in main blockchain.
+		{
+			name: "Spends last output of non coinbase zero timestamp",
+			stxo: SpentTxOut{
+				Amount:     13761000000,
+				Timestamp:  time.Unix(1690022348, 0),
+				BlockTime:  time.Unix(1690522348, 0),
+				PkScript:   hexToBytes("76a914b2fb57eadf61e106a100a7445a8c3f67898841ec88ac"),
+				IsCoinBase: false,
+				Height:     100024,
+			},
+			// todo ppc
+			serialized: hexToBytes("97b4600086c64780a3bcaf2a80a3daf14a00b2fb57eadf61e106a100a7445a8c3f67898841ec"),
+		},
+		// Adapted from block 100025 in main blockchain.
+		{
+			name: "Does not spend last output, legacy format zero timestamp",
+			stxo: SpentTxOut{
+				Amount:    34405000000,
+				Timestamp: time.Unix(1690022348, 0),
+				BlockTime: time.Unix(1690522348, 0),
+				PkScript:  hexToBytes("76a9146edbc6c4d31bae9f1ccc38538a114bf42de65e8688ac"),
+			},
+			serialized: hexToBytes("0091f20f80a3bcaf2a80a3daf14a006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
 		},
 	}
 
@@ -237,6 +322,8 @@ func TestSpendJournalSerialization(t *testing.T) {
 			name: "One tx with one input spends last output of coinbase",
 			entry: []SpentTxOut{{
 				Amount:     5000000000,
+				Timestamp: time.Unix(1690522348, 0),
+				BlockTime: time.Unix(1690522348, 0),
 				PkScript:   hexToBytes("410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac"),
 				IsCoinBase: true,
 				Height:     9,
@@ -261,24 +348,29 @@ func TestSpendJournalSerialization(t *testing.T) {
 				LockTime: 0,
 			}},
 			// todo ppc
-			serialized: hexToBytes("2500320511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
+			serialized: hexToBytes("25003280a3daf14a80a3daf14a0511db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c"),
 		},
 		// Adapted from block 100025 in main blockchain.
 		{
 			name: "Two txns when one spends last output, one doesn't",
 			entry: []SpentTxOut{{
 				Amount:     34405000000,
+				Timestamp: time.Unix(1690522348, 0),
+				BlockTime: time.Unix(1690522348, 0),
 				PkScript:   hexToBytes("76a9146edbc6c4d31bae9f1ccc38538a114bf42de65e8688ac"),
 				IsCoinBase: false,
 				Height:     100024,
 			}, {
 				Amount:     13761000000,
+				Timestamp: time.Unix(1690522348, 0),
+				BlockTime: time.Unix(1690522348, 0),
 				PkScript:   hexToBytes("76a914b2fb57eadf61e106a100a7445a8c3f67898841ec88ac"),
 				IsCoinBase: false,
 				Height:     100024,
 			}},
 			blockTxns: []*wire.MsgTx{{ // Coinbase omitted.
 				Version: 1,
+				Timestamp: time.Unix(1690522348, 0),
 				TxIn: []*wire.TxIn{{
 					PreviousOutPoint: wire.OutPoint{
 						Hash:  *newHashFromStr("c0ed017828e59ad5ed3cf70ee7c6fb0f426433047462477dc7a5d470f987a537"),
@@ -297,6 +389,7 @@ func TestSpendJournalSerialization(t *testing.T) {
 				LockTime: 0,
 			}, {
 				Version: 1,
+				Timestamp: time.Unix(1690522348, 0),
 				TxIn: []*wire.TxIn{{
 					PreviousOutPoint: wire.OutPoint{
 						Hash:  *newHashFromStr("92fbe1d4be82f765dfabc9559d4620864b05cc897c4db0e29adac92d294e52b7"),
@@ -315,7 +408,7 @@ func TestSpendJournalSerialization(t *testing.T) {
 				LockTime: 0,
 			}},
 			// todo ppc
-			serialized: hexToBytes("97b4600086c64700b2fb57eadf61e106a100a7445a8c3f67898841ec97b4600091f20f006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
+			serialized: hexToBytes("97b4600086c64780a3daf14a80a3daf14a00b2fb57eadf61e106a100a7445a8c3f67898841ec97b4600091f20f80a3daf14a80a3daf14a006edbc6c4d31bae9f1ccc38538a114bf42de65e86"),
 		},
 	}
 
@@ -433,12 +526,27 @@ func TestUtxoSerialization(t *testing.T) {
 			name: "height 1, coinbase",
 			entry: &UtxoEntry{
 				amount:      5000000000,
+				timestamp: time.Unix(1690522348, 0),
+				blockTime: time.Unix(1690522348, 0),
 				pkScript:    hexToBytes("410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac"),
 				blockHeight: 1,
 				packedFlags: tfCoinBase,
 			},
 			// todo ppc
-			serialized: hexToBytes("05320496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c5280fefefefd97c2b7910080fefefefd97c2b79100"),
+			serialized: hexToBytes("053280a3daf14a80a3daf14a0496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52"),
+		},
+		{
+			name: "height 1, coinstake",
+			entry: &UtxoEntry{
+				amount:      5000000000,
+				timestamp:   time.Unix(1690522348, 0),
+				blockTime:   time.Unix(1690522348, 0),
+				pkScript:    hexToBytes("410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac"),
+				blockHeight: 1,
+				packedFlags: tfCoinStake,
+			},
+			// todo ppc
+			serialized: hexToBytes("063280a3daf14a80a3daf14a0496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52"),
 		},
 		// From tx in main blockchain:
 		// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098:0
@@ -446,9 +554,25 @@ func TestUtxoSerialization(t *testing.T) {
 			name: "height 1, coinbase, spent",
 			entry: &UtxoEntry{
 				amount:      5000000000,
+				timestamp: time.Unix(1690522348, 0),
+				blockTime: time.Unix(1690522348, 0),
 				pkScript:    hexToBytes("410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac"),
 				blockHeight: 1,
 				packedFlags: tfCoinBase | tfSpent,
+			},
+			serialized: nil,
+		},
+		// From tx in main blockchain:
+		// 0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098:0
+		{
+			name: "height 1, coinstake, spent",
+			entry: &UtxoEntry{
+				amount:      5000000000,
+				timestamp:   time.Unix(1690522348, 0),
+				blockTime:   time.Unix(1690522348, 0),
+				pkScript:    hexToBytes("410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac"),
+				blockHeight: 1,
+				packedFlags: tfCoinStake | tfSpent,
 			},
 			serialized: nil,
 		},
@@ -458,12 +582,14 @@ func TestUtxoSerialization(t *testing.T) {
 			name: "height 100001, not coinbase",
 			entry: &UtxoEntry{
 				amount:      1000000,
+				timestamp: time.Unix(1690522348, 0),
+				blockTime: time.Unix(1690522348, 0),
 				pkScript:    hexToBytes("76a914ee8bd501094a7d5ca318da2506de35e1cb025ddc88ac"),
 				blockHeight: 100001,
 				packedFlags: 0,
 			},
 			// todo ppc
-			serialized: hexToBytes("97b4040700ee8bd501094a7d5ca318da2506de35e1cb025ddc80fefefefd97c2b7910080fefefefd97c2b79100"),
+			serialized: hexToBytes("97b4040780a3daf14a80a3daf14a00ee8bd501094a7d5ca318da2506de35e1cb025ddc"),
 		},
 		// From tx in main blockchain:
 		// 8131ffb0a2c945ecaf9b9063e59558784f9c3a74741ce6ae2a18d0571dac15bb:1
@@ -471,6 +597,8 @@ func TestUtxoSerialization(t *testing.T) {
 			name: "height 100001, not coinbase, spent",
 			entry: &UtxoEntry{
 				amount:      1000000,
+				timestamp: time.Unix(1690522348, 0),
+				blockTime: time.Unix(1690522348, 0),
 				pkScript:    hexToBytes("76a914ee8bd501094a7d5ca318da2506de35e1cb025ddc88ac"),
 				blockHeight: 100001,
 				packedFlags: tfSpent,
@@ -524,7 +652,18 @@ func TestUtxoSerialization(t *testing.T) {
 				utxoEntry.Amount(), test.entry.Amount())
 			continue
 		}
-
+		if !utxoEntry.Timestamp().Equal(test.entry.Timestamp()) {
+			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
+				"timestamps: got %s, want %s", i, test.name,
+				utxoEntry.Timestamp().String(), test.entry.Timestamp().String())
+			continue
+		}
+		if !utxoEntry.BlockTime().Equal(test.entry.blockTime) {
+			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
+				"blockTimes: got %s, want %s", i, test.name,
+				utxoEntry.BlockTime().String(), test.entry.BlockTime().String())
+			continue
+		}
 		if !bytes.Equal(utxoEntry.PkScript(), test.entry.PkScript()) {
 			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
 				"scripts: got %x, want %x", i, test.name,
@@ -541,6 +680,17 @@ func TestUtxoSerialization(t *testing.T) {
 			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
 				"coinbase flag: got %v, want %v", i, test.name,
 				utxoEntry.IsCoinBase(), test.entry.IsCoinBase())
+			continue
+		}
+		if utxoEntry.IsCoinStake() != test.entry.IsCoinStake() {
+			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
+				"coinstake flag: got %v, want %v", i, test.name,
+				utxoEntry.IsCoinStake(), test.entry.IsCoinStake())
+			continue
+		}
+		if utxoEntry.IsCoinBase() && utxoEntry.IsCoinStake() {
+			t.Errorf("deserializeUtxoEntry #%d (%s) mismatched "+
+				"can't carry both coinbase and coinbase", i, test.name)
 			continue
 		}
 	}

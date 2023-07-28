@@ -78,14 +78,6 @@ func (entry *UtxoEntry) BlockHeight() int32 {
 	return entry.blockHeight
 }
 
-func (entry *UtxoEntry) BlockTime() time.Time {
-	return entry.blockTime
-}
-
-func (entry *UtxoEntry) Timestamp() time.Time {
-	return entry.timestamp
-}
-
 // IsSpent returns whether or not the output has been spent based upon the
 // current state of the unspent transaction output view it was obtained from.
 func (entry *UtxoEntry) IsSpent() bool {
@@ -107,6 +99,14 @@ func (entry *UtxoEntry) Spend() {
 // Amount returns the amount of the output.
 func (entry *UtxoEntry) Amount() int64 {
 	return entry.amount
+}
+
+func (entry *UtxoEntry) BlockTime() time.Time {
+	return entry.blockTime
+}
+
+func (entry *UtxoEntry) Timestamp() time.Time {
+	return entry.timestamp
 }
 
 // PkScript returns the public key script for the output.
@@ -136,8 +136,7 @@ func NewUtxoEntry(
 	var cbFlag txoFlags
 	if isCoinbase {
 		cbFlag |= tfCoinBase
-	}
-	if isCoinStake {
+	} else if isCoinStake {
 		cbFlag |= tfCoinStake
 	}
 
@@ -228,8 +227,7 @@ func (view *UtxoViewpoint) addTxOut(outpoint wire.OutPoint, txOut *wire.TxOut, i
 	entry.packedFlags = tfModified
 	if isCoinBase {
 		entry.packedFlags |= tfCoinBase
-	}
-	if isCoinStake {
+	} else if isCoinStake {
 		entry.packedFlags |= tfCoinStake
 	}
 }
@@ -394,8 +392,7 @@ func (view *UtxoViewpoint) disconnectTransactions(db database.DB, block *btcutil
 		isCoinBase := txIdx == 0
 		if isCoinBase {
 			packedFlags |= tfCoinBase
-		}
-		if IsCoinStake(tx) {
+		} else if IsCoinStake(tx) {
 			packedFlags |= tfCoinStake
 		}
 
@@ -497,15 +494,14 @@ func (view *UtxoViewpoint) disconnectTransactions(db database.DB, block *btcutil
 			// Restore the utxo using the stxo data from the spend
 			// journal and mark it as modified.
 			entry.amount = stxo.Amount
-			entry.pkScript = stxo.PkScript
-			entry.blockHeight = stxo.Height
 			entry.blockTime = stxo.BlockTime
 			entry.timestamp = stxo.Timestamp
+			entry.pkScript = stxo.PkScript
+			entry.blockHeight = stxo.Height
 			entry.packedFlags = tfModified
 			if stxo.IsCoinBase {
 				entry.packedFlags |= tfCoinBase
-			}
-			if stxo.IsCoinStake {
+			} else if stxo.IsCoinStake {
 				entry.packedFlags |= tfCoinStake
 			}
 		}

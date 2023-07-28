@@ -7,6 +7,7 @@ package blockchain
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/txscript"
+	"time"
 )
 
 // -----------------------------------------------------------------------------
@@ -527,6 +528,24 @@ func decompressTxOutAmount(amount uint64) uint64 {
 	return n
 }
 
+// ppc earliest possible transaction on main net
+const (
+	// todo ppc possibly make this dynamic, depending on current net
+	refTime = int64(1345083810)
+)
+
+// compressTimestamp compresses a Unix timestamp to seconds elapsed from a reference time.
+func compressTimestamp(t time.Time) uint64 {
+	// todo ppc use timestamp as reference point for blocktime where possible
+	return uint64(t.Sub(time.Unix(refTime, 0)).Seconds())
+}
+
+// decompressTimestamp decompresses the compressed timestamp back to a Unix timestamp.
+func decompressTimestamp(compressedTime uint64) time.Time {
+	// todo ppc use timestamp as reference point for blocktime where possible
+	return time.Unix(refTime, 0).Add(time.Second * time.Duration(compressedTime))
+}
+
 // -----------------------------------------------------------------------------
 // Compressed transaction outputs consist of an amount and a public key script
 // both compressed using the domain specific compression algorithms previously
@@ -534,17 +553,21 @@ func decompressTxOutAmount(amount uint64) uint64 {
 //
 // The serialized format is:
 //
-//   <compressed amount><compressed script>
+//   <compressed amount><compressed timestamp><compressed blockTime><compressed script>
 //
-//   Field                 Type     Size
-//     compressed amount   VLQ      variable
-//     compressed script   []byte   variable
+//   Field                   Type     Size
+//     compressed amount     VLQ      variable
+//     compressed timestamp  VLQ      variable
+//     compressed blockTime  VLQ      variable
+//     compressed script     []byte   variable
 // -----------------------------------------------------------------------------
 
 // compressedTxOutSize returns the number of bytes the passed transaction output
 // fields would take when encoded with the format described above.
-func compressedTxOutSize(amount uint64, pkScript []byte) int {
+func compressedTxOutSize(amount uint64, timestamp time.Time, blockTime time.Time, pkScript []byte) int {
 	return serializeSizeVLQ(compressTxOutAmount(amount)) +
+		serializeSizeVLQ(compressTimestamp(timestamp)) +
+		serializeSizeVLQ(compressTimestamp(blockTime)) +
 		compressedScriptSize(pkScript)
 }
 
@@ -553,8 +576,10 @@ func compressedTxOutSize(amount uint64, pkScript []byte) int {
 // passed target byte slice with the format described above.  The target byte
 // slice must be at least large enough to handle the number of bytes returned by
 // the compressedTxOutSize function or it will panic.
-func putCompressedTxOut(target []byte, amount uint64, pkScript []byte) int {
+func putCompressedTxOut(target []byte, amount uint64, timestamp time.Time, blockTime time.Time, pkScript []byte) int {
 	offset := putVLQ(target, compressTxOutAmount(amount))
+	offset += putVLQ(target[offset:], compressTimestamp(timestamp))
+	offset += putVLQ(target[offset:], compressTimestamp(blockTime))
 	offset += putCompressedScript(target[offset:], pkScript)
 	return offset
 }
@@ -562,25 +587,41 @@ func putCompressedTxOut(target []byte, amount uint64, pkScript []byte) int {
 // decodeCompressedTxOut decodes the passed compressed txout, possibly followed
 // by other data, into its uncompressed amount and script and returns them along
 // with the number of bytes they occupied prior to decompression.
-func decodeCompressedTxOut(serialized []byte) (uint64, []byte, int, error) {
+func decodeCompressedTxOut(serialized []byte) (uint64, time.Time, time.Time, []byte, int, error) {
 	// Deserialize the compressed amount and ensure there are bytes
 	// remaining for the compressed script.
 	compressedAmount, bytesRead := deserializeVLQ(serialized)
 	if bytesRead >= len(serialized) {
-		return 0, nil, bytesRead, errDeserialize("unexpected end of " +
+		return 0, time.Time{}, time.Time{}, nil, bytesRead, errDeserialize("unexpected end of " +
 			"data after compressed amount")
+	}
+
+	compressedTimestamp, bytesReadT := deserializeVLQ(serialized[bytesRead:])
+	bytesRead += bytesReadT
+	if bytesRead >= len(serialized) {
+		return 0, time.Time{}, time.Time{}, nil, bytesRead, errDeserialize("unexpected end of " +
+			"data after compressed timestamp")
+	}
+
+	compressedBlockTime, bytesReadBT := deserializeVLQ(serialized[bytesRead:])
+	bytesRead += bytesReadBT
+	if bytesRead >= len(serialized) {
+		return 0, time.Time{}, time.Time{}, nil, bytesRead, errDeserialize("unexpected end of " +
+			"data after compressed block time")
 	}
 
 	// Decode the compressed script size and ensure there are enough bytes
 	// left in the slice for it.
 	scriptSize := decodeCompressedScriptSize(serialized[bytesRead:])
 	if len(serialized[bytesRead:]) < scriptSize {
-		return 0, nil, bytesRead, errDeserialize("unexpected end of " +
+		return 0, time.Time{}, time.Time{}, nil, bytesRead, errDeserialize("unexpected end of " +
 			"data after script size")
 	}
 
 	// Decompress and return the amount and script.
 	amount := decompressTxOutAmount(compressedAmount)
+	timestamp := decompressTimestamp(compressedTimestamp)
+	blockTime := decompressTimestamp(compressedBlockTime)
 	script := decompressScript(serialized[bytesRead : bytesRead+scriptSize])
-	return amount, script, bytesRead + scriptSize, nil
+	return amount, timestamp, blockTime, script, bytesRead + scriptSize, nil
 }

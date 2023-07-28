@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"testing"
+	"time"
 )
 
 // hexToBytes converts the passed hex string into bytes and will panic if there
@@ -340,33 +341,89 @@ func TestCompressedTxOut(t *testing.T) {
 	tests := []struct {
 		name       string
 		amount     uint64
+		timestamp  time.Time
+		blockTime  time.Time
 		pkScript   []byte
 		compressed []byte
 	}{
 		{
-			name:       "nulldata with 0 BTC",
+			name:       "nulldata with 0 BTC same time",
 			amount:     0,
+			timestamp:  time.Unix(1690522348, 0),
+			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
-			compressed: hexToBytes("00286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0080a3daf14a80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
 		},
 		{
-			name:       "pay-to-pubkey-hash dust",
+			name:       "pay-to-pubkey-hash dust same time",
 			amount:     546,
+			timestamp:  time.Unix(1690522348, 0),
+			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
-			compressed: hexToBytes("a52f001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+			compressed: hexToBytes("a52f80a3daf14a80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
 		},
 		{
-			name:       "pay-to-pubkey uncompressed 1 BTC",
+			name:       "pay-to-pubkey uncompressed 1 BTC same time",
 			amount:     100000000,
+			timestamp:  time.Unix(1690522348, 0),
+			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
-			compressed: hexToBytes("0904192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+			compressed: hexToBytes("0980a3daf14a80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+		},
+		{
+			name:       "nulldata with 0 BTC zero timestamp",
+			amount:     0,
+			timestamp:  time.Unix(0, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0080fefefefef9fdcdcb5e80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+		},
+		{
+			name:       "pay-to-pubkey-hash dust zero timestamp",
+			amount:     546,
+			timestamp:  time.Unix(0, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
+			compressed: hexToBytes("a52f80fefefefef9fdcdcb5e80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+		},
+		{
+			name:       "pay-to-pubkey uncompressed 1 BTC zero timestamp",
+			amount:     100000000,
+			timestamp:  time.Unix(0, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
+			compressed: hexToBytes("0980fefefefef9fdcdcb5e80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+		},
+		{
+			name:       "nulldata with 0 BTC differing timestamp",
+			amount:     0,
+			timestamp:  time.Unix(1690022348, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0080a3bcaf2a80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+		},
+		{
+			name:       "pay-to-pubkey-hash dust differing timestamp",
+			amount:     546,
+			timestamp:  time.Unix(1690022348, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
+			compressed: hexToBytes("a52f80a3bcaf2a80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+		},
+		{
+			name:       "pay-to-pubkey uncompressed 1 BTC differing timestamp",
+			amount:     100000000,
+			timestamp:  time.Unix(1690022348, 0),
+			blockTime:  time.Unix(1690522348, 0),
+			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
+			compressed: hexToBytes("0980a3bcaf2a80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		},
 	}
 
 	for _, test := range tests {
 		// Ensure the function to calculate the serialized size without
 		// actually serializing the txout is calculated properly.
-		gotSize := compressedTxOutSize(test.amount, test.pkScript)
+		gotSize := compressedTxOutSize(test.amount, test.timestamp, test.blockTime, test.pkScript)
 		if gotSize != len(test.compressed) {
 			t.Errorf("compressedTxOutSize (%s): did not get "+
 				"expected size - got %d, want %d", test.name,
@@ -377,7 +434,7 @@ func TestCompressedTxOut(t *testing.T) {
 		// Ensure the txout compresses to the expected value.
 		gotCompressed := make([]byte, gotSize)
 		gotBytesWritten := putCompressedTxOut(gotCompressed,
-			test.amount, test.pkScript)
+			test.amount, test.timestamp, test.blockTime, test.pkScript)
 		if !bytes.Equal(gotCompressed, test.compressed) {
 			t.Errorf("compressTxOut (%s): did not get expected "+
 				"bytes - got %x, want %x", test.name,
@@ -394,7 +451,7 @@ func TestCompressedTxOut(t *testing.T) {
 
 		// Ensure the serialized bytes are decoded back to the expected
 		// uncompressed values.
-		gotAmount, gotScript, gotBytesRead, err := decodeCompressedTxOut(
+		gotAmount, gotTimestamp, gotBlockTime, gotScript, gotBytesRead, err := decodeCompressedTxOut(
 			test.compressed)
 		if err != nil {
 			t.Errorf("decodeCompressedTxOut (%s): unexpected "+
@@ -405,6 +462,18 @@ func TestCompressedTxOut(t *testing.T) {
 			t.Errorf("decodeCompressedTxOut (%s): did not get "+
 				"expected amount - got %d, want %d",
 				test.name, gotAmount, test.amount)
+			continue
+		}
+		if !gotTimestamp.Equal(test.timestamp) {
+			t.Errorf("decodeCompressedTxOut (%s): did not get "+
+				"expected timestamp - got %s, want %s",
+				test.name, gotTimestamp.String(), test.timestamp.String())
+			continue
+		}
+		if !gotBlockTime.Equal(test.blockTime) {
+			t.Errorf("decodeCompressedTxOut (%s): did not get "+
+				"expected blockTime - got %s, want %s",
+				test.name, gotBlockTime.String(), test.blockTime.String())
 			continue
 		}
 		if !bytes.Equal(gotScript, test.pkScript) {
@@ -429,7 +498,7 @@ func TestTxOutCompressionErrors(t *testing.T) {
 
 	// A compressed txout with missing compressed script must error.
 	compressedTxOut := hexToBytes("00")
-	_, _, _, err := decodeCompressedTxOut(compressedTxOut)
+	_, _, _, _, _, err := decodeCompressedTxOut(compressedTxOut)
 	if !isDeserializeErr(err) {
 		t.Fatalf("decodeCompressedTxOut with missing compressed script "+
 			"did not return expected error type - got %T, want "+
@@ -438,7 +507,7 @@ func TestTxOutCompressionErrors(t *testing.T) {
 
 	// A compressed txout with short compressed script must error.
 	compressedTxOut = hexToBytes("0010")
-	_, _, _, err = decodeCompressedTxOut(compressedTxOut)
+	_, _, _, _, _, err = decodeCompressedTxOut(compressedTxOut)
 	if !isDeserializeErr(err) {
 		t.Fatalf("decodeCompressedTxOut with short compressed script "+
 			"did not return expected error type - got %T, want "+

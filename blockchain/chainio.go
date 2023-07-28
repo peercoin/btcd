@@ -313,7 +313,10 @@ func spentTxOutSerializeSize(stxo *SpentTxOut) int {
 		// so this is required for backwards compat.
 		size += serializeSizeVLQ(0)
 	}
-	return size + compressedTxOutSize(uint64(stxo.Amount), stxo.PkScript)
+	return size + compressedTxOutSize(uint64(stxo.Amount),
+		stxo.Timestamp,
+		stxo.BlockTime,
+		stxo.PkScript)
 }
 
 // putSpentTxOut serializes the passed stxo according to the format described
@@ -330,6 +333,8 @@ func putSpentTxOut(target []byte, stxo *SpentTxOut) int {
 		offset += putVLQ(target[offset:], 0)
 	}
 	return offset + putCompressedTxOut(target[offset:], uint64(stxo.Amount),
+		stxo.Timestamp,
+		stxo.BlockTime,
 		stxo.PkScript)
 }
 
@@ -370,7 +375,7 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 	}
 
 	// Decode the compressed txout.
-	amount, pkScript, bytesRead, err := decodeCompressedTxOut(
+	amount, timestamp, blockTime, pkScript, bytesRead, err := decodeCompressedTxOut(
 		serialized[offset:])
 	offset += bytesRead
 	if err != nil {
@@ -378,6 +383,8 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 			"txout: %v", err))
 	}
 	stxo.Amount = int64(amount)
+	stxo.Timestamp = timestamp
+	stxo.BlockTime = blockTime
 	stxo.PkScript = pkScript
 	return offset, nil
 }
@@ -675,18 +682,21 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 
 	// Calculate the size needed to serialize the entry.
 	size := serializeSizeVLQ(headerCode) +
-		compressedTxOutSize(uint64(entry.Amount()), entry.PkScript()) +
-		serializeSizeVLQ(uint64(entry.Timestamp().Unix())) + // todo ppc check type
-		serializeSizeVLQ(uint64(entry.BlockTime().Unix())) // todo ppc check type
+		compressedTxOutSize(uint64(entry.Amount()),
+			entry.Timestamp(),
+			entry.BlockTime(),
+			entry.PkScript(),
+		)
 
 	// Serialize the header code followed by the compressed unspent
 	// transaction output, the timestamp, and the block time.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
 	offset += putCompressedTxOut(serialized[offset:], uint64(entry.Amount()),
-		entry.PkScript())
-	offset += putVLQ(serialized[offset:], uint64(entry.Timestamp().Unix())) // todo ppc check type
-	offset += putVLQ(serialized[offset:], uint64(entry.BlockTime().Unix())) // todo ppc check type
+		entry.Timestamp(),
+		entry.BlockTime(),
+		entry.PkScript(),
+	)
 
 	return serialized, nil
 }
@@ -711,27 +721,11 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	blockHeight := int32(code >> 2)
 
 	// Decode the compressed unspent transaction output.
-	amount, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
+	amount, timestamp, blockTime, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
 	if err != nil {
 		return nil, errDeserialize(fmt.Sprintf("unable to decode "+
 			"utxo: %v", err))
 	}
-
-	// Decode the timestamp.
-	timestampCode, timestampOffset := deserializeVLQ(serialized[offset+compressedTxOutSize(amount, pkScript):])
-	if timestampOffset >= len(serialized) {
-		return nil, errDeserialize(fmt.Sprintf("unexpected end of data after timestamp"+
-			"utxo: %v", err))
-	}
-	timestamp := time.Unix(int64(timestampCode), 0)
-
-	// Decode the block time.
-	blockTimeCode, blockTimeOffset := deserializeVLQ(serialized[offset+compressedTxOutSize(amount, pkScript)+timestampOffset:])
-	if blockTimeOffset >= len(serialized) {
-		return nil, errDeserialize(fmt.Sprintf("unexpected end of data after block time"+
-			"utxo: %v", err))
-	}
-	blockTime := time.Unix(int64(blockTimeCode), 0)
 
 	entry := &UtxoEntry{
 		amount:      int64(amount),

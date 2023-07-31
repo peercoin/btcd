@@ -63,7 +63,7 @@ func (msg *MsgBlock) ClearTransactions() {
 // See Deserialize for decoding blocks stored to disk, such as in a database, as
 // opposed to decoding blocks from the wire.
 func (msg *MsgBlock) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) error {
-	err := readBlockHeader(r, pver, &msg.Header)
+	err := readBlockHeader(r, pver, &msg.Header, enc)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (msg *MsgBlock) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) er
 // all.  As of the time this comment was written, the encoded block is the same
 // in both instances, but there is a distinct difference and separating the two
 // allows the API to be flexible enough to deal with changes.
-func (msg *MsgBlock) Deserialize(r io.Reader) error {
+func (msg *MsgBlock) Deserialize(r io.Reader, enc MessageEncoding) error {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of BtcDecode.
@@ -120,7 +120,7 @@ func (msg *MsgBlock) Deserialize(r io.Reader) error {
 	// MessageEncoding parameter indicates that the transactions within the
 	// block are expected to be serialized according to the new
 	// serialization structure defined in BIP0141.
-	return msg.BtcDecode(r, 0, WitnessEncoding)
+	return msg.BtcDecode(r, 0, enc)
 }
 
 // DeserializeNoWitness decodes a block from r into the receiver similar to
@@ -134,13 +134,13 @@ func (msg *MsgBlock) DeserializeNoWitness(r io.Reader) error {
 // a byte buffer instead of a generic reader and returns a slice containing the
 // start and length of each transaction within the raw data that is being
 // deserialized.
-func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
+func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer, enc MessageEncoding) ([]TxLoc, error) {
 	fullLen := r.Len()
 
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of existing wire protocol functions.
-	err := readBlockHeader(r, 0, &msg.Header)
+	err := readBlockHeader(r, 0, &msg.Header, enc)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 // See Serialize for encoding blocks to be stored to disk, such as in a
 // database, as opposed to encoding blocks for the wire.
 func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error {
-	err := writeBlockHeader(w, pver, &msg.Header, true)
+	err := writeBlockHeader(w, pver, &msg.Header, enc)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) er
 // time this comment was written, the encoded block is the same in both
 // instances, but there is a distinct difference and separating the two allows
 // the API to be flexible enough to deal with changes.
-func (msg *MsgBlock) Serialize(w io.Writer) error {
+func (msg *MsgBlock) Serialize(w io.Writer, enc MessageEncoding) error {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of BtcEncode.
@@ -231,7 +231,7 @@ func (msg *MsgBlock) Serialize(w io.Writer) error {
 	// Passing WitnessEncoding as the encoding type here indicates that
 	// each of the transactions should be serialized using the witness
 	// serialization structure defined in BIP0141.
-	return msg.BtcEncode(w, 0, WitnessEncoding)
+	return msg.BtcEncode(w, 0, enc)
 }
 
 // SerializeNoWitness encodes a block to w using an identical format to

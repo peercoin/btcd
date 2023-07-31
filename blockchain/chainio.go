@@ -1284,7 +1284,7 @@ func (b *BlockChain) initChainState() error {
 			return err
 		}
 		var block wire.MsgBlock
-		err = block.Deserialize(bytes.NewReader(blockBytes))
+		err = block.Deserialize(bytes.NewReader(blockBytes), wire.LatestEncoding)
 		if err != nil {
 			return err
 		}
@@ -1333,7 +1333,7 @@ func deserializeBlockRow(blockRow []byte) (*wire.BlockHeader, blockStatus, error
 	buffer := bytes.NewReader(blockRow)
 
 	var header wire.BlockHeader
-	err := header.Deserialize(buffer)
+	err := header.Deserialize(buffer, wire.LatestEncoding)
 	if err != nil {
 		return nil, statusNone, err
 	}
@@ -1355,7 +1355,7 @@ func dbFetchHeaderByHash(dbTx database.Tx, hash *chainhash.Hash) (*wire.BlockHea
 	}
 
 	var header wire.BlockHeader
-	err = header.Deserialize(bytes.NewReader(headerBytes))
+	err = header.Deserialize(bytes.NewReader(headerBytes), wire.LatestEncoding)
 	if err != nil {
 		return nil, err
 	}
@@ -1410,7 +1410,7 @@ func dbStoreBlockNode(dbTx database.Tx, node *blockNode) error {
 	// Serialize block data to be stored.
 	w := bytes.NewBuffer(make([]byte, 0, blockHdrSize+1))
 	header := node.Header()
-	err := header.Serialize(w)
+	err := header.Serialize(w, wire.LatestEncoding)
 	if err != nil {
 		return err
 	}

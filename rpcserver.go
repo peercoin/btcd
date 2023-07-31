@@ -1369,7 +1369,7 @@ func handleGetBlockHeader(s *rpcServer, cmd interface{}, closeChan <-chan struct
 	// header as a hex-encoded string.
 	if c.Verbose != nil && !*c.Verbose {
 		var headerBuf bytes.Buffer
-		err := blockHeader.Serialize(&headerBuf)
+		err := blockHeader.Serialize(&headerBuf, wire.LatestEncoding)
 		if err != nil {
 			context := "Failed to serialize block header"
 			return nil, internalRPCError(err.Error(), context)
@@ -2150,7 +2150,7 @@ func handleGetBlockTemplateProposal(s *rpcServer, request *btcjson.TemplateReque
 		}
 	}
 	var msgBlock wire.MsgBlock
-	if err := msgBlock.Deserialize(bytes.NewReader(dataBytes)); err != nil {
+	if err := msgBlock.Deserialize(bytes.NewReader(dataBytes), wire.LatestEncoding); err != nil {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCDeserialization,
 			Message: "Block decode failed: " + err.Error(),
@@ -2325,7 +2325,7 @@ func handleGetHeaders(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	hexBlockHeaders := make([]string, len(headers))
 	var buf bytes.Buffer
 	for i, h := range headers {
-		err := h.Serialize(&buf)
+		err := h.Serialize(&buf, wire.LatestEncoding)
 		if err != nil {
 			return nil, internalRPCError(err.Error(),
 				"Failed to serialize block header")

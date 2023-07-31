@@ -52,7 +52,7 @@ func (b *Block) MsgBlock() *wire.MsgBlock {
 // Bytes returns the serialized bytes for the Block.  This is equivalent to
 // calling Serialize on the underlying wire.MsgBlock, however it caches the
 // result so subsequent calls are more efficient.
-func (b *Block) Bytes() ([]byte, error) {
+func (b *Block) Bytes(enc wire.MessageEncoding) ([]byte, error) {
 	// Return the cached serialized bytes if it has already been generated.
 	if len(b.serializedBlock) != 0 {
 		return b.serializedBlock, nil
@@ -60,7 +60,7 @@ func (b *Block) Bytes() ([]byte, error) {
 
 	// Serialize the MsgBlock.
 	w := bytes.NewBuffer(make([]byte, 0, b.msgBlock.SerializeSize()))
-	err := b.msgBlock.Serialize(w)
+	err := b.msgBlock.Serialize(w, enc)
 	if err != nil {
 		return nil, err
 	}
@@ -210,14 +210,14 @@ func (b *Block) TxHash(txNum int) (*chainhash.Hash, error) {
 // It is used to allow fast indexing into transactions within the raw byte
 // stream.
 func (b *Block) TxLoc() ([]wire.TxLoc, error) {
-	rawMsg, err := b.Bytes()
+	rawMsg, err := b.Bytes(wire.LatestEncoding)
 	if err != nil {
 		return nil, err
 	}
 	rbuf := bytes.NewBuffer(rawMsg)
 
 	var mblock wire.MsgBlock
-	txLocs, err := mblock.DeserializeTxLoc(rbuf)
+	txLocs, err := mblock.DeserializeTxLoc(rbuf, wire.LatestEncoding)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func NewBlockFromBytes(serializedBlock []byte) (*Block, error) {
 func NewBlockFromReader(r io.Reader) (*Block, error) {
 	// Deserialize the bytes into a MsgBlock.
 	var msgBlock wire.MsgBlock
-	err := msgBlock.Deserialize(r)
+	err := msgBlock.Deserialize(r, wire.LatestEncoding)
 	if err != nil {
 		return nil, err
 	}

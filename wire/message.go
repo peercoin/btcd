@@ -66,9 +66,13 @@ const (
 type MessageEncoding uint32
 
 const (
+	BaseEncodingNoFlags MessageEncoding = 1 << iota
+	
 	// BaseEncoding encodes all messages in the default format specified
 	// for the Bitcoin wire protocol.
-	BaseEncoding MessageEncoding = 1 << iota
+	BaseEncoding
+
+	WitnessEncodingNoFlags
 
 	// WitnessEncoding encodes all messages other than transaction messages
 	// using the default Bitcoin wire protocol specification. For transaction

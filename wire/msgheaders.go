@@ -55,7 +55,7 @@ func (msg *MsgHeaders) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) 
 	msg.Headers = make([]*BlockHeader, 0, count)
 	for i := uint64(0); i < count; i++ {
 		bh := &headers[i]
-		err := readBlockHeader(r, pver, bh, enc)
+		err := readBlockHeader(r, pver, bh)
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (msg *MsgHeaders) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) 
 	}
 
 	for _, bh := range msg.Headers {
-		err := writeBlockHeader(w, pver, bh, enc)
+		err := writeBlockHeader(w, pver, bh, true)
 		if err != nil {
 			return err
 		}

@@ -126,7 +126,7 @@ func (r FutureGetBlockResult) Receive() (*wire.MsgBlock, error) {
 
 	// Deserialize the block and return it.
 	var msgBlock wire.MsgBlock
-	err = msgBlock.Deserialize(bytes.NewReader(serializedBlock), wire.LatestEncoding)
+	err = msgBlock.Deserialize(bytes.NewReader(serializedBlock))
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +609,7 @@ func (r FutureGetBlockHeaderResult) Receive() (*wire.BlockHeader, error) {
 
 	// Deserialize the blockheader and return it.
 	var bh wire.BlockHeader
-	err = bh.Deserialize(bytes.NewReader(serializedBH), wire.LatestEncoding)
+	err = bh.Deserialize(bytes.NewReader(serializedBH))
 	if err != nil {
 		return nil, err
 	}

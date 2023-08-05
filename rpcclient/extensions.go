@@ -268,7 +268,7 @@ func (r FutureGetHeadersResult) Receive() ([]wire.BlockHeader, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = headers[i].Deserialize(bytes.NewReader(serialized), wire.LatestEncoding)
+		err = headers[i].Deserialize(bytes.NewReader(serialized))
 		if err != nil {
 			return nil, err
 		}

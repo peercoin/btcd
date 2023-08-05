@@ -738,7 +738,7 @@ func (m *wsNotificationManager) notifyFilteredBlockConnected(clients map[chan st
 	// Create the common portion of the notification that is the same for
 	// every client.
 	var w bytes.Buffer
-	err := block.MsgBlock().Header.Serialize(&w, wire.LatestEncoding)
+	err := block.MsgBlock().Header.Serialize(&w)
 	if err != nil {
 		rpcsLog.Errorf("Failed to serialize header for filtered block "+
 			"connected notification: %v", err)
@@ -788,7 +788,7 @@ func (*wsNotificationManager) notifyFilteredBlockDisconnected(clients map[chan s
 
 	// Notify interested websocket clients about the disconnected block.
 	var w bytes.Buffer
-	err := block.MsgBlock().Header.Serialize(&w, wire.LatestEncoding)
+	err := block.MsgBlock().Header.Serialize(&w)
 	if err != nil {
 		rpcsLog.Errorf("Failed to serialize header for filtered block "+
 			"disconnected notification: %v", err)

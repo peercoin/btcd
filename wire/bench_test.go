@@ -365,7 +365,7 @@ func BenchmarkReadBlockHeader(b *testing.B) {
 	var header BlockHeader
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, 0)
-		readBlockHeader(r, 0, &header, LatestEncoding)
+		readBlockHeader(r, 0, &header)
 	}
 }
 
@@ -374,7 +374,7 @@ func BenchmarkReadBlockHeader(b *testing.B) {
 func BenchmarkWriteBlockHeader(b *testing.B) {
 	header := blockOne.Header
 	for i := 0; i < b.N; i++ {
-		writeBlockHeader(ioutil.Discard, 0, &header, LatestEncoding)
+		writeBlockHeader(ioutil.Discard, 0, &header, true)
 	}
 }
 

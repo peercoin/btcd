@@ -6,7 +6,6 @@ package chaincfg
 
 import (
 	"bytes"
-	"github.com/btcsuite/btcd/wire"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -18,7 +17,7 @@ func TestGenesisBlock(t *testing.T) {
 	// Encode the genesis block to raw bytes.
 	var buf bytes.Buffer
 	// todo ppc currently fails when writing flags
-	err := MainNetParams.GenesisBlock.Serialize(&buf, wire.WitnessEncodingNoFlags)
+	err := MainNetParams.GenesisBlock.Serialize(&buf)
 	if err != nil {
 		t.Fatalf("TestGenesisBlock: %v", err)
 	}
@@ -44,7 +43,7 @@ func TestGenesisBlock(t *testing.T) {
 func TestRegTestGenesisBlock(t *testing.T) {
 	// Encode the genesis block to raw bytes.
 	var buf bytes.Buffer
-	err := RegressionNetParams.GenesisBlock.Serialize(&buf, wire.WitnessEncodingNoFlags)
+	err := RegressionNetParams.GenesisBlock.Serialize(&buf)
 	if err != nil {
 		t.Fatalf("TestRegTestGenesisBlock: %v", err)
 	}
@@ -71,7 +70,7 @@ func TestRegTestGenesisBlock(t *testing.T) {
 func TestTestNet3GenesisBlock(t *testing.T) {
 	// Encode the genesis block to raw bytes.
 	var buf bytes.Buffer
-	err := TestNet3Params.GenesisBlock.Serialize(&buf, wire.WitnessEncodingNoFlags)
+	err := TestNet3Params.GenesisBlock.Serialize(&buf)
 	if err != nil {
 		t.Fatalf("TestTestNet3GenesisBlock: %v", err)
 	}
@@ -98,7 +97,7 @@ func TestTestNet3GenesisBlock(t *testing.T) {
 func TestSimNetGenesisBlock(t *testing.T) {
 	// Encode the genesis block to raw bytes.
 	var buf bytes.Buffer
-	err := SimNetParams.GenesisBlock.Serialize(&buf, wire.WitnessEncodingNoFlags)
+	err := SimNetParams.GenesisBlock.Serialize(&buf)
 	if err != nil {
 		t.Fatalf("TestSimNetGenesisBlock: %v", err)
 	}
@@ -125,7 +124,7 @@ func TestSimNetGenesisBlock(t *testing.T) {
 func TestSigNetGenesisBlock(t *testing.T) {
 	// Encode the genesis block to raw bytes.
 	var buf bytes.Buffer
-	err := SigNetParams.GenesisBlock.Serialize(&buf, wire.WitnessEncodingNoFlags)
+	err := SigNetParams.GenesisBlock.Serialize(&buf)
 	if err != nil {
 		t.Fatalf("TestSigNetGenesisBlock: %v", err)
 	}

@@ -15,6 +15,7 @@ import (
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
 // Version 4 bytes + Timestamp 4 bytes + Bits 4 bytes + Nonce 4 bytes + Flags 4 bytes +
 // PrevBlock and MerkleRoot hashes.
+// ppc: 84 on wire, 80 on disk
 const MaxBlockHeaderPayload = 20 + (chainhash.HashSize * 2) // todo ppc verify
 
 // BlockHeader defines information about a block and is used in the bitcoin
@@ -55,7 +56,7 @@ func (h *BlockHeader) BlockHash() chainhash.Hash {
 	// encode could fail except being out of memory which would cause a
 	// run-time panic.
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	_ = writeBlockHeader(buf, 0, h, false)
+	_ = h.Serialize(buf)
 
 	return chainhash.DoubleHashH(buf.Bytes())
 }
@@ -73,7 +74,7 @@ func (h *BlockHeader) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) e
 // See Serialize for encoding block headers to be stored to disk, such as in a
 // database, as opposed to encoding block headers for the wire.
 func (h *BlockHeader) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error {
-	return writeBlockHeader(w, pver, h, true)
+	return writeBlockHeader(w, pver, h)
 }
 
 // Deserialize decodes a block header from r into the receiver using a format
@@ -83,7 +84,9 @@ func (h *BlockHeader) Deserialize(r io.Reader) error {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of readBlockHeader.
-	return readBlockHeader(r, 0, h)
+	// ppc: we do not read flags
+	return readElements(r, &h.Version, &h.PrevBlock, &h.MerkleRoot,
+		(*uint32Time)(&h.Timestamp), &h.Bits, &h.Nonce)
 }
 
 // Serialize encodes a block header from r into the receiver using a format
@@ -93,7 +96,10 @@ func (h *BlockHeader) Serialize(w io.Writer) error {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of writeBlockHeader.
-	return writeBlockHeader(w, 0, h, true)
+	// ppc: we do not read flags
+	sec := uint32(h.Timestamp.Unix())
+	return writeElements(w, h.Version, &h.PrevBlock, &h.MerkleRoot,
+		sec, h.Bits, h.Nonce)
 }
 
 // NewBlockHeader returns a new BlockHeader using the provided version, previous
@@ -121,22 +127,13 @@ func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
 	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
 		(*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce, &bh.Flags)
-	// todo ppc reading flags needs to be optional
 }
 
 // writeBlockHeader writes a bitcoin block header to w.  See Serialize for
 // encoding block headers to be stored to disk, such as in a database, as
 // opposed to encoding for the wire.
-func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader, sFlag bool) error {
+func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint32(bh.Timestamp.Unix())
-	err := writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		sec, bh.Bits, bh.Nonce)
-	if err != nil {
-		return err
-	}
-	if sFlag {
-		// todo ppc this is experimental. remove sFlag and write meta flags elsewhere
-		err = writeElement(w, bh.Flags)
-	}
-	return err
+	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
+		sec, bh.Bits, bh.Nonce, bh.Flags)
 }

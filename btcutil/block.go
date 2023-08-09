@@ -74,6 +74,7 @@ func (b *Block) Bytes() ([]byte, error) {
 // BytesNoWitness returns the serialized bytes for the block with transactions
 // encoded without any witness data.
 func (b *Block) BytesNoWitness() ([]byte, error) {
+	// todo ppc
 	// Return the cached serialized bytes if it has already been generated.
 	if len(b.serializedBlockNoWitness) != 0 {
 		return b.serializedBlockNoWitness, nil
@@ -225,10 +226,7 @@ func (b *Block) TxLoc() ([]wire.TxLoc, error) {
 	// peercoin: initializing meta offsets
 	b.meta.TxOffsets = make([]uint32, len(txLocs))
 	for i, txLoc := range txLocs {
-		// todo ppc offsets are advanced by 4
-		//   until this issue is resolved i'm moving the tx offset back by 4 manually so that the
-		//   stored data still works as intended
-		b.meta.TxOffsets[i] = uint32(txLoc.TxStart) - 4
+		b.meta.TxOffsets[i] = uint32(txLoc.TxStart)
 	}
 
 	return txLocs, err
@@ -262,7 +260,11 @@ func NewBlockFromBytes(serializedBlock []byte) (*Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	b.serializedBlock = serializedBlock
+	// b.serializedBlock = serializedBlock
+	_, err = b.Bytes()
+	if err != nil {
+		return nil, err
+	}
 	return b, nil
 }
 

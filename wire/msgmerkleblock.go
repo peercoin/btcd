@@ -111,7 +111,7 @@ func (msg *MsgMerkleBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncodi
 		return messageError("MsgMerkleBlock.BtcDecode", str)
 	}
 
-	err := writeBlockHeader(w, pver, &msg.Header, true)
+	err := writeBlockHeader(w, pver, &msg.Header)
 	if err != nil {
 		return err
 	}

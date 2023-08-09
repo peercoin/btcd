@@ -135,7 +135,7 @@ func TestBlockHeaderWire(t *testing.T) {
 	for i, test := range tests {
 		// Encode to wire format.
 		var buf bytes.Buffer
-		err := writeBlockHeader(&buf, test.pver, test.in, true)
+		err := writeBlockHeader(&buf, test.pver, test.in)
 		if err != nil {
 			t.Errorf("writeBlockHeader #%d error %v", i, err)
 			continue

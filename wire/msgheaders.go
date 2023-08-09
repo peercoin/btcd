@@ -108,7 +108,7 @@ func (msg *MsgHeaders) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) 
 	}
 
 	for _, bh := range msg.Headers {
-		err := writeBlockHeader(w, pver, bh, true)
+		err := writeBlockHeader(w, pver, bh)
 		if err != nil {
 			return err
 		}

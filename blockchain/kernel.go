@@ -749,6 +749,7 @@ func (b *BlockChain) checkTxProofOfStake(prevNode *blockNode, tx *btcutil.Tx, in
 		return
 	}
 
+	// todo ppc fetch utxo here
 	blockFrom, err := b.BlockByHeight(txPrevData.BlockHeight())
 	if err != nil {
 		err = fmt.Errorf("CheckProofOfStake() : read block failed (%v)", err) // unable to read block of previous transaction
@@ -770,6 +771,7 @@ func (b *BlockChain) checkTxProofOfStake(prevNode *blockNode, tx *btcutil.Tx, in
 			//nTxPrevOffset := uint32(prevBlockTxLoc[txPrev.Index()].TxStart)
 			nTxPrevOffset := blockFrom.Meta().TxOffsets[txPrev.Index()]
 			//log.Infof("Comparing txOffset : %v - %v", nTxPrevOffset, nTxPrevOffsetMeta)
+			// todo ppc there's no need to pass in blockfrom
 			hashProofOfStake, success, err = b.checkStakeKernelHash(
 				prevNode, nBits, blockFrom, nTxPrevOffset, txPrev, &txin.PreviousOutPoint,
 				nTimeTx, timeSource, fDebug)

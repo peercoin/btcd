@@ -120,13 +120,51 @@ func (msg *MsgBlock) Deserialize(r io.Reader) error {
 	// MessageEncoding parameter indicates that the transactions within the
 	// block are expected to be serialized according to the new
 	// serialization structure defined in BIP0141.
-	return msg.BtcDecode(r, 0, WitnessEncoding)
+	// return msg.BtcDecode(r, 0, WitnessEncoding)
+	err := msg.Header.Deserialize(r)
+	if err != nil {
+		return err
+	}
+
+	txCount, err := ReadVarInt(r, 0)
+	if err != nil {
+		return err
+	}
+
+	// Prevent more transactions than could possibly fit into a block.
+	// It would be possible to cause memory exhaustion and panics without
+	// a sane upper bound on this count.
+	if txCount > maxTxPerBlock {
+		str := fmt.Sprintf("too many transactions to fit into a block "+
+			"[count %d, max %d]", txCount, maxTxPerBlock)
+		return messageError("MsgBlock.BtcDecode", str)
+	}
+
+	msg.Transactions = make([]*MsgTx, 0, txCount)
+	for i := uint64(0); i < txCount; i++ {
+		tx := MsgTx{}
+		err := tx.BtcDecode(r, 0, WitnessEncoding)
+		if err != nil {
+			return err
+		}
+		msg.Transactions = append(msg.Transactions, &tx)
+	}
+
+	// todo ppc cap maxAllowed to 72?
+	msg.Signature, err = ReadVarBytes(r, 0, MaxMessagePayload,
+		"block signature")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeserializeNoWitness decodes a block from r into the receiver similar to
 // Deserialize, however DeserializeWitness strips all (if any) witness data
 // from the transactions within the block before encoding them.
 func (msg *MsgBlock) DeserializeNoWitness(r io.Reader) error {
+	// todo ppc
 	return msg.BtcDecode(r, 0, BaseEncoding)
 }
 
@@ -140,7 +178,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 	// At the current time, there is no difference between the wire encoding
 	// at protocol version 0 and the stable long-term storage format.  As
 	// a result, make use of existing wire protocol functions.
-	err := readBlockHeader(r, 0, &msg.Header)
+	err := msg.Header.Deserialize(r)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +226,7 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 // See Serialize for encoding blocks to be stored to disk, such as in a
 // database, as opposed to encoding blocks for the wire.
 func (msg *MsgBlock) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error {
-	err := writeBlockHeader(w, pver, &msg.Header, true)
+	err := writeBlockHeader(w, pver, &msg.Header)
 	if err != nil {
 		return err
 	}
@@ -231,7 +269,31 @@ func (msg *MsgBlock) Serialize(w io.Writer) error {
 	// Passing WitnessEncoding as the encoding type here indicates that
 	// each of the transactions should be serialized using the witness
 	// serialization structure defined in BIP0141.
-	return msg.BtcEncode(w, 0, WitnessEncoding)
+	// return msg.BtcEncode(w, 0, WitnessEncoding)
+	err := msg.Header.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	err = WriteVarInt(w, 0, uint64(len(msg.Transactions)))
+	if err != nil {
+		return err
+	}
+
+	for _, tx := range msg.Transactions {
+		err = tx.BtcEncode(w, 0, WitnessEncoding)
+		if err != nil {
+			return err
+		}
+	}
+
+	// todo ppc write blocksig here
+	err = WriteVarBytes(w, 0, msg.Signature)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SerializeNoWitness encodes a block to w using an identical format to
@@ -240,7 +302,32 @@ func (msg *MsgBlock) Serialize(w io.Writer) error {
 // allow one to selectively encode transaction witness data to non-upgraded
 // peers which are unaware of the new encoding.
 func (msg *MsgBlock) SerializeNoWitness(w io.Writer) error {
-	return msg.BtcEncode(w, 0, BaseEncoding)
+	// todo ppc
+	// return msg.BtcEncode(w, 0, BaseEncoding)
+	err := msg.Header.Serialize(w)
+	if err != nil {
+		return err
+	}
+
+	err = WriteVarInt(w, 0, uint64(len(msg.Transactions)))
+	if err != nil {
+		return err
+	}
+
+	for _, tx := range msg.Transactions {
+		err = tx.BtcEncode(w, 0, BaseEncoding)
+		if err != nil {
+			return err
+		}
+	}
+
+	// todo ppc write blocksig here
+	err = WriteVarBytes(w, 0, msg.Signature)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SerializeSize returns the number of bytes it would take to serialize the
@@ -248,6 +335,7 @@ func (msg *MsgBlock) SerializeNoWitness(w io.Writer) error {
 func (msg *MsgBlock) SerializeSize() int {
 	// Block header bytes + Serialized varint size for the number of
 	// transactions.
+	// todo ppc header len
 	n := blockHeaderLen + VarIntSerializeSize(uint64(len(msg.Transactions)))
 
 	for _, tx := range msg.Transactions {
@@ -264,6 +352,7 @@ func (msg *MsgBlock) SerializeSize() int {
 func (msg *MsgBlock) SerializeSizeStripped() int {
 	// Block header bytes + Serialized varint size for the number of
 	// transactions.
+	// todo ppc header len
 	n := blockHeaderLen + VarIntSerializeSize(uint64(len(msg.Transactions)))
 
 	for _, tx := range msg.Transactions {

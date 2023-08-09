@@ -506,6 +506,7 @@ func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSo
 
 	// A block must not exceed the maximum allowed block payload when
 	// serialized.
+	// todo ppc
 	serializedSize := msgBlock.SerializeSizeStripped()
 	if serializedSize > MaxBlockBaseSize {
 		str := fmt.Sprintf("serialized block is too big - got %d, "+
@@ -515,7 +516,7 @@ func checkBlockSanity(block *btcutil.Block, chainParams *chaincfg.Params, timeSo
 
 	// The first transaction in a block must be a coinbase.
 	transactions := block.Transactions()
-	if !IsCoinBase(transactions[0]) {
+	if !IsCoinBase(transactions[0]) { // todo ppc?
 		return ruleError(ErrFirstTxNotCoinbase, "first transaction in "+
 			"block is not a coinbase")
 	}

@@ -315,7 +315,7 @@ func (m *Manager) Init(chain *blockchain.BlockChain, interrupt <-chan struct{}) 
 					return err
 				}
 				block.SetHeight(height)
-				// todo ppc verify. it's possible we've never written this one at this point
+				// todo ppc: verify. it's possible we've never written this one at this point
 				metaBuf, err := blockchain.GetBlkMeta(dbTx, block.MsgBlock().BlockHash())
 				if err != nil {
 					return err

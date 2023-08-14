@@ -38,7 +38,7 @@ var (
 
 	// blockDataFile is the path to a file containing the first 256 blocks
 	// of the block chain.
-	blockDataFile = filepath.Join("..", "testdata", "blocks1-256.bz2")
+	blockDataFile = filepath.Join("..", "testdata", "blocks1-256-ppc.bz2")
 
 	// errSubTestFail is used to signal that a sub test returned false.
 	errSubTestFail = fmt.Errorf("sub test failure")
@@ -64,6 +64,8 @@ func loadBlocks(t *testing.T, dataFile string, network wire.BitcoinNet) ([]*btcu
 	// Set the first block as the genesis block.
 	blocks := make([]*btcutil.Block, 0, 256)
 	genesis := btcutil.NewBlock(chaincfg.MainNetParams.GenesisBlock)
+	// todo ppc: meta placeholder
+	genesis.Meta()
 	blocks = append(blocks, genesis)
 
 	// Load the remaining blocks.
@@ -107,6 +109,8 @@ func loadBlocks(t *testing.T, dataFile string, network wire.BitcoinNet) ([]*btcu
 			t.Errorf("Failed to parse block %v: %v", height, err)
 			return nil, err
 		}
+		// todo ppc: meta placeholder
+		block.Meta()
 		blocks = append(blocks, block)
 	}
 

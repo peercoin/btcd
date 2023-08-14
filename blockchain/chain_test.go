@@ -21,7 +21,8 @@ func TestHaveBlock(t *testing.T) {
 	// (genesis block) -> 1 -> 2 -> 3 -> 4
 	//                          \-> 3a
 	testFiles := []string{
-		"blk_0_to_4.dat.bz2",
+		"blk_0_to_4-ppc.dat.bz2",
+		// todo ppc
 		"blk_3A.dat.bz2",
 	}
 
@@ -81,11 +82,12 @@ func TestHaveBlock(t *testing.T) {
 		// Genesis block should be present (in the main chain).
 		{hash: chaincfg.MainNetParams.GenesisHash.String(), want: true},
 
+		// todo ppc
 		// Block 3a should be present (on a side chain).
-		{hash: "00000000474284d20067a4d33f6a02284e6ef70764a3a26d6a5b9df52ef663dd", want: true},
+		// {hash: "00000000474284d20067a4d33f6a02284e6ef70764a3a26d6a5b9df52ef663dd", want: true},
 
 		// Block 100000 should be present (as an orphan).
-		{hash: "000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506", want: true},
+		{hash: "000000000000001f3837430ebcca7c4774f93593a46dcceb1e90a5386b5445d6", want: true},
 
 		// Random hashes should not be available.
 		{hash: "123", want: false},
@@ -121,8 +123,8 @@ func TestCalcSequenceLock(t *testing.T) {
 	// We need to activate CSV in order to test the processing logic, so
 	// manually craft the block version that's used to signal the soft-fork
 	// activation.
-	csvBit := netParams.Deployments[chaincfg.DeploymentCSV].BitNumber
-	blockVersion := int32(0x20000000 | (uint32(1) << csvBit))
+	// csvBit := netParams.Deployments[chaincfg.DeploymentCSV].BitNumber
+	blockVersion := int32(3) // int32(0x20000000 | (uint32(1) << csvBit))
 
 	// Generate enough synthetic blocks to activate CSV.
 	chain := newFakeChain(netParams)

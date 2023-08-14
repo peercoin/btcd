@@ -1431,6 +1431,12 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *btcutil.Block) error {
 		return ruleError(ErrPrevBlockNotBest, str)
 	}
 
+	// peercoin: processing
+	ppcErr := b.ppcProcessBlock(block, phasePreSanity)
+	if ppcErr != nil {
+		return ppcErr
+	}
+
 	err := checkBlockSanity(block, b.chainParams, b.timeSource, flags)
 	if err != nil {
 		return err

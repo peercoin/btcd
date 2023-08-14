@@ -7,6 +7,7 @@ package mining
 import (
 	"encoding/hex"
 	"testing"
+	"time"
 
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcutil"
@@ -49,7 +50,7 @@ func newUtxoViewpoint(sourceTxns []*wire.MsgTx, sourceTxHeights []int32) *blockc
 
 	view := blockchain.NewUtxoViewpoint()
 	for i, tx := range sourceTxns {
-		view.AddTxOuts(btcutil.NewTx(tx), sourceTxHeights[i])
+		view.AddTxOuts(btcutil.NewTx(tx), sourceTxHeights[i], time.Unix(0, 0), time.Unix(0, 0))
 	}
 	return view
 }

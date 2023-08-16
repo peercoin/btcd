@@ -471,10 +471,11 @@ func (msg *MsgTx) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) error
 	msg.Version = int32(version)
 
 	if version < 3 {
-		err = readElement(r, (*uint32Time)(&msg.Timestamp)) // todo ppc use binarySerializer?
+		timestamp, err := binarySerializer.Uint32(r, littleEndian)
 		if err != nil {
 			return err
 		}
+		msg.Timestamp = time.Unix(int64(timestamp), 0)
 	} else {
 		msg.Timestamp = time.Unix(0, 0)
 	}
@@ -751,8 +752,7 @@ func (msg *MsgTx) BtcEncode(w io.Writer, pver uint32, enc MessageEncoding) error
 	}
 
 	if msg.Version < 3 {
-		// todo ppc use binarySerializer?
-		err = writeElement(w, uint32(msg.Timestamp.Unix()))
+		err = binarySerializer.PutUint32(w, littleEndian, uint32(msg.Timestamp.Unix()))
 		if err != nil {
 			return err
 		}

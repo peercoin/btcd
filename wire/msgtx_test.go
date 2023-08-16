@@ -639,6 +639,7 @@ func TestTxSerializeErrors(t *testing.T) {
 // which are intentionally crafted to use large values for the variable number
 // of inputs and outputs are handled properly.  This could otherwise potentially
 // be used as an attack vector.
+// todo ppc this test appears to be inherently broken, as version is always read as nonsense
 func TestTxOverflowErrors(t *testing.T) {
 	// Use protocol version 70001 and transaction version 1 specifically
 	// here instead of the latest values because the test data is using
@@ -657,7 +658,6 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
-				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, // Varint for number of input transactions
 			}, pver, BaseEncoding, txVer, &MessageError{},
@@ -667,7 +667,6 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
-				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x00, // Varint for number of input transactions
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, // Varint for number of output transactions
@@ -679,7 +678,6 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
-				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x01, // Varint for number of input transactions
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -696,7 +694,6 @@ func TestTxOverflowErrors(t *testing.T) {
 		{
 			[]byte{
 				0x00, 0x00, 0x00, 0x01, // Version
-				0x00, 0x00, 0x00, 0x00, // Timestamp
 				0x01, // Varint for number of input transactions
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

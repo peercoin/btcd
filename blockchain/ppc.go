@@ -7,6 +7,7 @@ package blockchain
 import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
+	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcd/txscript"
 	// "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -240,14 +241,25 @@ func (b *BlockChain) calcMintAndMoneySupply(block *btcutil.Block, prevHash *chai
 	block.Meta().Mint = nValueOut - nValueIn + nFees
 	var prevNode *blockNode
 	prevNode = b.index.LookupNode(prevHash)
-	if prevNode == nil {
-		return err
-	}
 
 	if prevNode == nil {
 		block.Meta().MoneySupply = nValueOut - nValueIn
 	} else {
-		block.Meta().MoneySupply = prevNode.meta.MoneySupply + nValueOut - nValueIn
+		if prevNode.meta.MoneySupply == 0 {
+			// reorganizing the chain means an unconnected node might not contain meta info yet, so we look up the full block
+			var prevBlock *btcutil.Block
+			err = b.db.View(func(dbTx database.Tx) error {
+				var err error
+				prevBlock, err = dbFetchBlockByNode(dbTx, prevNode)
+				return err
+			})
+			if err != nil {
+				return err
+			}
+			block.Meta().MoneySupply = prevBlock.Meta().MoneySupply + nValueOut - nValueIn
+		} else {
+			block.Meta().MoneySupply = prevNode.meta.MoneySupply + nValueOut - nValueIn
+		}
 	}
 
 	log.Debugf("height = %v, mint = %v, moneySupply = %v", block.Height(), block.Meta().Mint, block.Meta().MoneySupply)
@@ -664,7 +676,7 @@ func ppcCheckTransactionInputs(tx *btcutil.Tx, nTimeTx int64, utxoView *UtxoView
 		}
 
 		maxReward := getProofOfStakeReward(chainParams, nTimeTx, coinAge, moneySupply) - coinstakeCost
-		if moneySupply != 0 && stakeReward > maxReward {
+		if moneySupply != 0 && stakeReward > maxReward { // todo ppc: moneySupply of 0 can also indicate that our input is garbage, and that it should be double checked beforehand. should be removed if not needed.
 			str := fmt.Sprintf("%v stake reward value %v exceeded %v", tx.Hash(), stakeReward, maxReward)
 			return ruleError(ErrBadCoinstakeValue, str)
 		}

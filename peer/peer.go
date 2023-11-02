@@ -936,6 +936,10 @@ func (p *Peer) PushAddrV2Msg(addrs []*wire.NetAddressV2) (
 //
 // This function is safe for concurrent access.
 func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chainhash.Hash) error {
+	// todo ppc this gets rid of the forced timeout -> dc when requesting blocks because otherwise we'd just be ignored
+	if len(locator) > 1 {
+		locator = locator[1:]
+	}
 	// Extract the begin hash from the block locator, if one was specified,
 	// to use for filtering duplicate getblocks requests.
 	var beginHash *chainhash.Hash
@@ -957,8 +961,6 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 	}
 
 	// Construct the getblocks request and queue it to be sent.
-	// todo ppc this is producing something the endpoint can't or wont handle at the moment
-	//   which in turn causes the message to stall
 	msg := wire.NewMsgGetBlocks(stopHash)
 	for _, hash := range locator {
 		err := msg.AddBlockLocatorHash(hash)
@@ -1240,7 +1242,6 @@ func (p *Peer) maybeAddDeadline(pendingResponses map[string]time.Time, msgCmd st
 	case wire.CmdGetBlocks:
 		// Expects an inv message.
 		pendingResponses[wire.CmdInv] = deadline
-		log.Debugf("%s, %v", msgCmd, deadline)
 
 	case wire.CmdGetData:
 		// Expects a block, merkleblock, tx, or notfound message.

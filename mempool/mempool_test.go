@@ -347,7 +347,7 @@ func newPoolHarness(chainParams *chaincfg.Params) (*poolHarness, []spendableOutp
 	if err != nil {
 		return nil, nil, err
 	}
-	harness.chain.utxos.AddTxOuts(coinbase, curHeight+1, time.Time{}, time.Time{})
+	harness.chain.utxos.AddTxOuts(coinbase, curHeight+1, time.Unix(0, 0))
 	for i := uint32(0); i < numOutputs; i++ {
 		outputs = append(outputs, txOutToSpendableOut(coinbase, i))
 	}
@@ -375,7 +375,7 @@ func (ctx *testContext) addCoinbaseTx(numOutputs uint32) *btcutil.Tx {
 		ctx.t.Fatalf("unable to create coinbase: %v", err)
 	}
 
-	ctx.harness.chain.utxos.AddTxOuts(coinbase, coinbaseHeight, time.Time{}, time.Time{})
+	ctx.harness.chain.utxos.AddTxOuts(coinbase, coinbaseHeight, time.Unix(0, 0))
 	maturity := int32(ctx.harness.chainParams.CoinbaseMaturity)
 	ctx.harness.chain.SetHeight(coinbaseHeight + maturity)
 	ctx.harness.chain.SetMedianTimePast(time.Now())
@@ -401,7 +401,7 @@ func (ctx *testContext) addSignedTx(inputs []spendableOutput,
 
 	if confirmed {
 		newHeight := ctx.harness.chain.BestHeight() + 1
-		ctx.harness.chain.utxos.AddTxOuts(tx, newHeight, time.Time{}, time.Time{})
+		ctx.harness.chain.utxos.AddTxOuts(tx, newHeight, time.Unix(0, 0))
 		ctx.harness.chain.SetHeight(newHeight)
 		ctx.harness.chain.SetMedianTimePast(time.Now())
 	} else {

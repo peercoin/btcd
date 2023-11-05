@@ -50,7 +50,7 @@ func newUtxoViewpoint(sourceTxns []*wire.MsgTx, sourceTxHeights []int32) *blockc
 
 	view := blockchain.NewUtxoViewpoint()
 	for i, tx := range sourceTxns {
-		view.AddTxOuts(btcutil.NewTx(tx), sourceTxHeights[i], time.Unix(0, 0), time.Unix(0, 0))
+		view.AddTxOuts(btcutil.NewTx(tx), sourceTxHeights[i], time.Unix(0, 0))
 	}
 	return view
 }

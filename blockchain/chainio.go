@@ -315,7 +315,6 @@ func spentTxOutSerializeSize(stxo *SpentTxOut) int {
 	}
 	return size + compressedTxOutSize(uint64(stxo.Amount),
 		stxo.Timestamp,
-		stxo.BlockTime,
 		stxo.PkScript)
 }
 
@@ -334,7 +333,6 @@ func putSpentTxOut(target []byte, stxo *SpentTxOut) int {
 	}
 	return offset + putCompressedTxOut(target[offset:], uint64(stxo.Amount),
 		stxo.Timestamp,
-		stxo.BlockTime,
 		stxo.PkScript)
 }
 
@@ -375,7 +373,7 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 	}
 
 	// Decode the compressed txout.
-	amount, timestamp, blockTime, pkScript, bytesRead, err := decodeCompressedTxOut(
+	amount, timestamp, pkScript, bytesRead, err := decodeCompressedTxOut(
 		serialized[offset:])
 	offset += bytesRead
 	if err != nil {
@@ -384,7 +382,6 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 	}
 	stxo.Amount = int64(amount)
 	stxo.Timestamp = timestamp
-	stxo.BlockTime = blockTime
 	stxo.PkScript = pkScript
 	return offset, nil
 }
@@ -684,7 +681,6 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	size := serializeSizeVLQ(headerCode) +
 		compressedTxOutSize(uint64(entry.Amount()),
 			entry.Timestamp(),
-			entry.BlockTime(),
 			entry.PkScript(),
 		)
 
@@ -694,7 +690,6 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	offset := putVLQ(serialized, headerCode)
 	offset += putCompressedTxOut(serialized[offset:], uint64(entry.Amount()),
 		entry.Timestamp(),
-		entry.BlockTime(),
 		entry.PkScript(),
 	)
 
@@ -721,7 +716,7 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	blockHeight := int32(code >> 2)
 
 	// Decode the compressed unspent transaction output.
-	amount, timestamp, blockTime, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
+	amount, timestamp, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
 	if err != nil {
 		return nil, errDeserialize(fmt.Sprintf("unable to decode "+
 			"utxo: %v", err))
@@ -731,7 +726,6 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 		amount:      int64(amount),
 		pkScript:    pkScript,
 		blockHeight: blockHeight,
-		blockTime:   blockTime,
 		packedFlags: 0,
 		timestamp:   timestamp,
 	}

@@ -1245,7 +1245,11 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *btcutil.Block, vi
 		// spent txos slice is updated to contain an entry for each
 		// spent txout in the order each transaction spends them.
 		// todo ppc verify timestamps + update for v3
-		err = view.connectTransaction(tx, node.height, time.Unix(node.timestamp, 0), tx.MsgTx().Timestamp, stxos)
+		timestamp := tx.MsgTx().Timestamp
+		if timestamp.IsZero() {
+			timestamp = block.MsgBlock().Header.Timestamp
+		}
+		err = view.connectTransaction(tx, node.height, timestamp, stxos)
 		if err != nil {
 			return err
 		}

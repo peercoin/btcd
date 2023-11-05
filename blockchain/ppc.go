@@ -289,9 +289,6 @@ func getCoinAgeTx(tx *btcutil.Tx, nTimeTx int64, utxoView *UtxoViewpoint, chainP
 			continue // previous transaction not in main chain
 		}
 		txPrevTime := txPrev.Timestamp().Unix()
-		if txPrevTime == 0 {
-			txPrevTime = txPrev.blockTime.Unix()
-		}
 		if nTimeTx < txPrevTime {
 			err := fmt.Errorf("Transaction timestamp violation")
 			return 0, err // Transaction timestamp violation
@@ -299,7 +296,7 @@ func getCoinAgeTx(tx *btcutil.Tx, nTimeTx int64, utxoView *UtxoViewpoint, chainP
 		// todo ppc v3 tx does not carry timestamps, use block instead
 		// todo ppc verify Timestamp does what we need it to
 		// todo ppc this might be too lax. we either need blocktime in utxoview or another way to fetch the block itself
-		if txPrev.BlockTime().Unix()+chainParams.StakeMinAge > nTimeTx {
+		if txPrev.Timestamp().Unix()+chainParams.StakeMinAge > nTimeTx {
 			continue // only count coins meeting min age requirement
 		}
 
@@ -701,16 +698,10 @@ func ppcCheckTransactionInput(nTimeTx int64, originUtxo *UtxoEntry) error {
 	// 	return DoS(100, error("ConnectInputs() : transaction timestamp earlier than input transaction"));
 	// todo ppc I added timestamp to utxoview, and it might not be accurate.
 	// todo ppc verify there's no checks missing
-	nTimeOriginTx := originUtxo.Timestamp().Unix()
-	if nTimeOriginTx == 0 {
-		nTimeOriginTx = originUtxo.BlockTime().Unix()
-	}
-	/* todo ppc
-	if nTimeOriginTx > nTimeTx {
+	if originUtxo.Timestamp().Unix() > nTimeTx {
 		str := "transaction timestamp earlier than input transaction"
 		return ruleError(ErrEarlierTimestamp, str)
 	}
-	*/
 	return nil
 }
 

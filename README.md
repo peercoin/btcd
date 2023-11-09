@@ -1,12 +1,10 @@
-btcd for peercoin - the pre-Alpha
+ppcd for peercoin - the pre-Alpha
 
 ## This version is strictly alpha quality.
 ## Expect it to break without notice.
 
 #### Known issues / bugs
 
-- Priority: Reorgs are currently not functional
-  - Encountering one will require a resync
 - Database format for storing and retrieving block meta is not final
 - Script verification fails on 4 blocks on mainnet,  
   which means script verification has been disabled for those blocks currently
@@ -37,19 +35,19 @@ recommended that `GOPATH` is set to a directory in your home directory such as
 - To simply build the binary, without installing it, the following command should suffice:
 
 ```bash
-$ git clone https://github.com/peercoin/btcd && cd btcd
+$ git clone https://github.com/peercoin/ppcd && cd ppcd
 $ go build
-# run it using ./btcd
+# run it using ./ppcd
 ```
 
-- Run the following commands to obtain btcd, all dependencies, and install it:
+- Run the following commands to obtain ppcd, all dependencies, and install it:
 
 ```bash
-$ cd $GOPATH/src/github.com/peercoin/btcd
+$ cd $GOPATH/src/github.com/peercoin/ppcd
 $ GO111MODULE=on go install -v . ./cmd/...
 ```
 
-- btcd (and utilities) will now be installed in ```$GOPATH/bin```.  If you did
+- ppcd (and utilities) will now be installed in ```$GOPATH/bin```.  If you did
   not already add the bin directory to your system path during Go installation,
   we recommend you do so now.
 
@@ -57,26 +55,26 @@ $ GO111MODULE=on go install -v . ./cmd/...
 
 #### Linux/BSD/MacOSX/POSIX - Build from Source
 
-- Run the following commands to update btcd, all dependencies, and install it:
+- Run the following commands to update ppcd, all dependencies, and install it:
 
 ```bash
-$ cd $GOPATH/src/github.com/peercoin/btcd
+$ cd $GOPATH/src/github.com/peercoin/ppcd
 $ git pull
 $ GO111MODULE=on go install -v . ./cmd/...
 ```
 
 ## Getting Started
 
-btcd has several configuration options available to tweak how it runs, but all
+ppcd has several configuration options available to tweak how it runs, but all
 of the basic operations described in the intro section work with zero
 configuration.
 
 #### Linux/BSD/POSIX/Source
 
 ```bash
-$ ./btcd
+$ ./ppcd
 ```
 
 ## License
 
-btcd is licensed under the [copyfree](http://copyfree.org) ISC License.
+ppcd is licensed under the [copyfree](http://copyfree.org) ISC License.

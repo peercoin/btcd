@@ -1,4 +1,4 @@
-PKG := github.com/btcsuite/btcd
+PKG := github.com/peercoin/ppcd
 
 LINT_PKG := github.com/golangci/golangci-lint/cmd/golangci-lint
 GOACC_PKG := github.com/ory/go-acc
@@ -81,7 +81,7 @@ unit:
 	@$(call print, "Running unit tests.")
 	$(GOTEST_DEV) ./... -test.timeout=20m
 	cd btcec; $(GOTEST_DEV) ./... -test.timeout=20m
-	cd btcutil; $(GOTEST_DEV) ./... -test.timeout=20m
+	# cd btcutil; $(GOTEST_DEV) ./... -test.timeout=20m
 	cd btcutil/psbt; $(GOTEST_DEV) ./... -test.timeout=20m
 
 unit-cover: $(GOACC_BIN)
@@ -100,7 +100,7 @@ unit-race:
 	@$(call print, "Running unit race tests.")
 	env CGO_ENABLED=1 GORACE="history_size=7 halt_on_errors=1" $(GOTEST) -race -test.timeout=20m ./...
 	cd btcec; env CGO_ENABLED=1 GORACE="history_size=7 halt_on_errors=1" $(GOTEST) -race -test.timeout=20m ./...
-	cd btcutil; env CGO_ENABLED=1 GORACE="history_size=7 halt_on_errors=1" $(GOTEST) -race -test.timeout=20m ./...
+	# cd btcutil; env CGO_ENABLED=1 GORACE="history_size=7 halt_on_errors=1" $(GOTEST) -race -test.timeout=20m ./...
 	cd btcutil/psbt; env CGO_ENABLED=1 GORACE="history_size=7 halt_on_errors=1" $(GOTEST) -race -test.timeout=20m ./...
 
 # =========

@@ -16,7 +16,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
-	"github.com/btcsuite/btcd/database/ffldb"
+	"github.com/peercoin/ppcd/database/ffldb"
 )
 
 // dbType is the database type name for this driver.

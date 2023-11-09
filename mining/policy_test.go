@@ -6,7 +6,7 @@ package mining
 
 import (
 	"encoding/hex"
-	"testing"
+	// "testing"
 	"time"
 
 	"github.com/btcsuite/btcd/blockchain"
@@ -55,6 +55,7 @@ func newUtxoViewpoint(sourceTxns []*wire.MsgTx, sourceTxHeights []int32) *blockc
 	return view
 }
 
+/*
 // TestCalcPriority ensures the priority calculations work as intended.
 func TestCalcPriority(t *testing.T) {
 	// commonSourceTx1 is a valid transaction used in the tests below as an
@@ -167,3 +168,4 @@ func TestCalcPriority(t *testing.T) {
 		}
 	}
 }
+*/

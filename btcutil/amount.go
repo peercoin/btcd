@@ -20,6 +20,7 @@ type AmountUnit int
 
 // These constants define various units used when describing a bitcoin
 // monetary amount.
+// todo ppc
 const (
 	AmountMegaBTC  AmountUnit = 4
 	AmountKiloBTC  AmountUnit = 1
@@ -35,19 +36,19 @@ const (
 func (u AmountUnit) String() string {
 	switch u {
 	case AmountMegaBTC:
-		return "MBTC"
+		return "MPPC"
 	case AmountKiloBTC:
-		return "kBTC"
+		return "kPPC"
 	case AmountBTC:
-		return "BTC"
+		return "PPC"
 	case AmountMilliBTC:
-		return "mBTC"
+		return "mPPC"
 	case AmountMicroBTC:
-		return "μBTC"
+		return "μPPC"
 	case AmountSatoshi:
 		return "Satoshi"
 	default:
-		return "1e" + strconv.FormatInt(int64(u), 10) + " BTC"
+		return "1e" + strconv.FormatInt(int64(u), 10) + " PPC"
 	}
 }
 
@@ -84,7 +85,7 @@ func NewAmount(f float64) (Amount, error) {
 	case math.IsInf(f, 1):
 		fallthrough
 	case math.IsInf(f, -1):
-		return 0, errors.New("invalid bitcoin amount")
+		return 0, errors.New("invalid peercoin amount")
 	}
 
 	return round(f * SatoshiPerBitcoin), nil

@@ -342,7 +342,6 @@ func TestCompressedTxOut(t *testing.T) {
 		name       string
 		amount     uint64
 		timestamp  time.Time
-		blockTime  time.Time
 		pkScript   []byte
 		compressed []byte
 	}{
@@ -350,73 +349,64 @@ func TestCompressedTxOut(t *testing.T) {
 			name:       "nulldata with 0 BTC same time",
 			amount:     0,
 			timestamp:  time.Unix(1690522348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
-			compressed: hexToBytes("0080a3daf14a80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0085a58ca46c286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
 		},
 		{
 			name:       "pay-to-pubkey-hash dust same time",
 			amount:     546,
 			timestamp:  time.Unix(1690522348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
-			compressed: hexToBytes("a52f80a3daf14a80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+			compressed: hexToBytes("a52f85a58ca46c001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
 		},
 		{
 			name:       "pay-to-pubkey uncompressed 1 BTC same time",
 			amount:     100000000,
 			timestamp:  time.Unix(1690522348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
-			compressed: hexToBytes("0980a3daf14a80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+			compressed: hexToBytes("0985a58ca46c04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		},
 		{
 			name:       "nulldata with 0 BTC zero timestamp",
 			amount:     0,
 			timestamp:  time.Unix(0, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
-			compressed: hexToBytes("0080fefefefef9fdcdcb5e80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0000286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
 		},
 		{
 			name:       "pay-to-pubkey-hash dust zero timestamp",
 			amount:     546,
 			timestamp:  time.Unix(0, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
-			compressed: hexToBytes("a52f80fefefefef9fdcdcb5e80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+			compressed: hexToBytes("a52f00001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
 		},
 		{
 			name:       "pay-to-pubkey uncompressed 1 BTC zero timestamp",
 			amount:     100000000,
 			timestamp:  time.Unix(0, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
-			compressed: hexToBytes("0980fefefefef9fdcdcb5e80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+			compressed: hexToBytes("090004192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		},
 		{
 			name:       "nulldata with 0 BTC differing timestamp",
 			amount:     0,
 			timestamp:  time.Unix(1690022348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("6a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
-			compressed: hexToBytes("0080a3bcaf2a80a3daf14a286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
+			compressed: hexToBytes("0085a4ede24c286a200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"),
 		},
 		{
 			name:       "pay-to-pubkey-hash dust differing timestamp",
 			amount:     546,
 			timestamp:  time.Unix(1690022348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("76a9141018853670f9f3b0582c5b9ee8ce93764ac32b9388ac"),
-			compressed: hexToBytes("a52f80a3bcaf2a80a3daf14a001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
+			compressed: hexToBytes("a52f85a4ede24c001018853670f9f3b0582c5b9ee8ce93764ac32b93"),
 		},
 		{
 			name:       "pay-to-pubkey uncompressed 1 BTC differing timestamp",
 			amount:     100000000,
 			timestamp:  time.Unix(1690022348, 0),
-			blockTime:  time.Unix(1690522348, 0),
 			pkScript:   hexToBytes("4104192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b40d45264838c0bd96852662ce6a847b197376830160c6d2eb5e6a4c44d33f453eac"),
-			compressed: hexToBytes("0980a3bcaf2a80a3daf14a04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
+			compressed: hexToBytes("0985a4ede24c04192d74d0cb94344c9569c2e77901573d8d7903c3ebec3a957724895dca52c6b4"),
 		},
 	}
 

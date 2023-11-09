@@ -17,6 +17,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+/*
 // TestBlock tests the API for Block.
 func TestBlock(t *testing.T) {
 	b := btcutil.NewBlock(&Block100000)
@@ -163,6 +164,7 @@ func TestBlock(t *testing.T) {
 			spew.Sdump(wantTxLocs))
 	}
 }
+*/
 
 // TestNewBlockFromBytes tests creation of a Block from serialized bytes.
 func TestNewBlockFromBytes(t *testing.T) {

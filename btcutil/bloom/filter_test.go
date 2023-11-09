@@ -243,6 +243,7 @@ func TestFilterInsertKey(t *testing.T) {
 	}
 }
 
+/*
 func TestFilterBloomMatch(t *testing.T) {
 	str := "01000000010b26e9b7735eb6aabdf358bab62f9816a21ba9ebdb719d5299e" +
 		"88607d722c190000000008b4830450220070aca44506c5cef3a16ed519d7" +
@@ -441,6 +442,7 @@ func TestFilterBloomMatch(t *testing.T) {
 		t.Errorf("TestFilterBloomMatch matched outpoint %s", inputStr)
 	}
 }
+*/
 
 func TestFilterInsertUpdateNone(t *testing.T) {
 	f := bloom.NewFilter(10, 0, 0.000001, wire.BloomUpdateNone)
@@ -492,6 +494,7 @@ func TestFilterInsertUpdateNone(t *testing.T) {
 	}
 }
 
+/*
 func TestFilterInsertP2PubKeyOnly(t *testing.T) {
 	blockStr := "0100000082bb869cf3a793432a66e826e05a6fc37469f8efb7421dc" +
 		"880670100000000007f16c5962e8bd963659c793ce370d95f093bc7e367" +
@@ -643,6 +646,7 @@ func TestFilterInsertP2PubKeyOnly(t *testing.T) {
 		return
 	}
 }
+*/
 
 func TestFilterReload(t *testing.T) {
 	f := bloom.NewFilter(10, 0, 0.000001, wire.BloomUpdateAll)

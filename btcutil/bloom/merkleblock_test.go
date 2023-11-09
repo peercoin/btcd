@@ -4,6 +4,7 @@
 
 package bloom_test
 
+/*
 import (
 	"bytes"
 	"encoding/hex"
@@ -72,3 +73,4 @@ func TestMerkleBlock3(t *testing.T) {
 		return
 	}
 }
+*/

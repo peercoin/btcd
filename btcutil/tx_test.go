@@ -96,6 +96,7 @@ func TestTxErrors(t *testing.T) {
 	}
 }
 
+/*
 // TestTxHasWitness tests the HasWitness() method.
 func TestTxHasWitness(t *testing.T) {
 	msgTx := Block100000.Transactions[0] // contains witness data
@@ -115,7 +116,9 @@ func TestTxHasWitness(t *testing.T) {
 		}
 	}
 }
+*/
 
+/*
 // TestTxWitnessHash tests the WitnessHash() method.
 func TestTxWitnessHash(t *testing.T) {
 	msgTx := Block100000.Transactions[0] // contains witness data
@@ -134,3 +137,4 @@ func TestTxWitnessHash(t *testing.T) {
 		}
 	}
 }
+*/

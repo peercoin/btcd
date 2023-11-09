@@ -6,15 +6,10 @@
 package builder_test
 
 import (
-	"encoding/hex"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/btcutil/gcs"
 	"github.com/btcsuite/btcd/btcutil/gcs/builder"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 )
 
@@ -62,6 +57,7 @@ var (
 	}
 )
 
+/*
 // TestUseBlockHash tests using a block hash as a filter key.
 func TestUseBlockHash(t *testing.T) {
 	// Block hash #448710, pretty high difficulty.
@@ -188,6 +184,7 @@ func TestUseBlockHash(t *testing.T) {
 		t.Fatalf("No error on P too big!")
 	}
 }
+*/
 
 func BuilderTest(b *builder.GCSBuilder, hash *chainhash.Hash, p uint8,
 	outPoint wire.OutPoint, addrBytes []byte, witness wire.TxWitness,

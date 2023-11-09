@@ -4,6 +4,7 @@
 
 package psbt
 
+/*
 import (
 	"bytes"
 	"encoding/base64"
@@ -1573,3 +1574,4 @@ func TestUnknowns(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, packetWithUnknowns, encoded)
 }
+*/

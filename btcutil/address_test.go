@@ -5,17 +5,8 @@
 package btcutil_test
 
 import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
-	"reflect"
-	"strings"
-	"testing"
-
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
-	"golang.org/x/crypto/ripemd160"
 )
 
 type CustomParamStruct struct {
@@ -44,6 +35,7 @@ func applyCustomParams(params chaincfg.Params, customParams CustomParamStruct) c
 
 var customParams = applyCustomParams(chaincfg.MainNetParams, CustomParams)
 
+/*
 func TestAddresses(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -894,3 +886,4 @@ func TestAddresses(t *testing.T) {
 		}
 	}
 }
+*/

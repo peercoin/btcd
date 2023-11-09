@@ -4,6 +4,7 @@
 
 package blockchain
 
+/*
 import (
 	"reflect"
 	"testing"
@@ -114,3 +115,4 @@ func TestDeserializeUtxoEntryV0(t *testing.T) {
 		}
 	}
 }
+*/

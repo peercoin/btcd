@@ -1,0 +1,46 @@
+name: Build master and publish binaries
+on:
+  push:
+    branches:
+      - master
+
+env:
+  # go needs absolute directories, using the $HOME variable doesn't work here.
+  GOCACHE: /home/runner/work/go/pkg/build
+  GOPATH: /home/runner/work/go
+  GO_VERSION: 1.21.4
+
+jobs:
+  build:
+    name: Build master
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect env
+        id: detect
+        shell: bash
+        run: echo "sha8=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Build once
+        run: make build
+
+      - name: Build
+        run: ./release/release.sh ${{ steps.detect.outputs.sha8 }}
+
+      - name: Publish
+        uses: marvinpinto/action-automatic-releases@919008cf3f741b179569b7a6fb4d8860689ab7f0
+        with:
+          repo_token: ${{ github.token }}
+          automatic_release_tag: master-release
+          prerelease: true
+          title: "Development build: master"
+          files: ppcd-${{ steps.detect.outputs.sha8 }}/*

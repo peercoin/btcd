@@ -19,16 +19,16 @@ else
     TAG=$1
 fi
 
-go mod vendor
-tar -cvzf vendor.tar.gz vendor
+# go mod vendor
+# tar -cvzf vendor.tar.gz vendor
 
 PACKAGE=ppcd
 MAINDIR=$PACKAGE-$TAG
 mkdir -p $MAINDIR
 
-cp vendor.tar.gz $MAINDIR/
-rm vendor.tar.gz
-rm -r vendor
+# cp vendor.tar.gz $MAINDIR/
+# rm vendor.tar.gz
+# rm -r vendor
 
 PACKAGESRC="$MAINDIR/$PACKAGE-source-$TAG.tar"
 git archive -o $PACKAGESRC HEAD

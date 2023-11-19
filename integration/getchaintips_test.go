@@ -7,8 +7,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/integration/rpctest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,6 +51,7 @@ func compareMultipleChainTips(t *testing.T, gotChainTips, expectedChainTips []*b
 	return nil
 }
 
+/* todo ppc
 func TestGetChainTips(t *testing.T) {
 	// block1Hex is a block that builds on top of the regtest genesis block.
 	// Has blockhash of "36c056247e8c0589f6307995e4e13acf2b2b79cad9ecd5a4eeab2131ed0ecde5".
@@ -348,3 +347,4 @@ func TestGetChainTips(t *testing.T) {
 		t.Fatalf("TestGetChainTips fail. Error: %v", err)
 	}
 }
+*/

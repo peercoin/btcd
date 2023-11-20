@@ -1,6 +1,6 @@
-ppcd for peercoin - the pre-Alpha
+ppcd (beta) for peercoin
 
-## This version is strictly alpha quality.
+## This version is strictly beta quality.
 ## Expect it to break without notice.
 
 #### Known issues / bugs

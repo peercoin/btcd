@@ -83,6 +83,8 @@ type blockNode struct {
 
 	// height is the position in the block chain.
 	height int32
+	// height of pos blocks
+	heightStake int32
 
 	// Some fields from block headers to aid in best chain selection and
 	// reconstructing headers from memory.  These must be treated as
@@ -122,6 +124,10 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, blockMeta *wi
 	if parent != nil {
 		node.parent = parent
 		node.height = parent.height + 1
+		node.heightStake = parent.heightStake
+		if (blockMeta.Flags & FBlockProofOfStake) > 0 {
+			node.heightStake += 1
+		}
 		node.workSum = node.workSum.Add(parent.workSum, node.workSum)
 	}
 }

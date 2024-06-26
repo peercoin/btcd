@@ -13,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	// "github.com/btcsuite/btcd/txscript"
 	"math/big"
+	"sync/atomic"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -53,6 +54,8 @@ const (
 	FBlockStakeEntropy = uint32(1 << 1)
 	// FBlockStakeModifier regenerated stake modifier blockNode flag (ppc)
 	FBlockStakeModifier = uint32(1 << 2)
+	// ASERT half life
+	nDAAHalfLife int64 = 24 * 60 * 60
 )
 
 // Stake TODO(?) golint
@@ -91,6 +94,153 @@ func (b *BlockChain) GetLastBlockIndex(hash *chainhash.Hash, fProofOfStake bool)
 	return getLastBlockIndex(b.index.LookupNode(hash), fProofOfStake).Hash()
 }
 
+var (
+	cachedAnchor atomic.Value // *blockNode
+)
+
+// ResetASERTAnchorBlockCache resets the cached anchor block
+func ResetASERTAnchorBlockCache() {
+	cachedAnchor.Store((*blockNode)(nil))
+}
+
+// CalculateASERT calculates the next target using ASERT
+func CalculateASERT(refTarget, powLimit *big.Int, nPowTargetSpacing, nTimeDiff, nHeightDiff, nHalfLife int64) *big.Int {
+	// Input target must never be zero nor exceed powLimit.
+	if refTarget.Sign() <= 0 || refTarget.Cmp(powLimit) > 0 {
+		panic("Invalid refTarget")
+	}
+
+	// We need some leading zero bits in powLimit to handle overflows easily.
+	// 28 leading zero bits should be enough.
+	if new(big.Int).Rsh(powLimit, 228).Sign() != 0 {
+		panic("powLimit doesn't have enough leading zero bits")
+	}
+
+	// Height diff should NOT be negative.
+	if nHeightDiff < 0 {
+		panic("Negative nHeightDiff")
+	}
+
+	// Calculate the exponent
+	exponent := nTimeDiff - nPowTargetSpacing*(nHeightDiff+1)
+	exponent = (exponent * 65536) / nHalfLife
+
+	// Calculate shifts and fractional part
+	shifts := exponent >> 16
+	frac := uint64(uint16(exponent))
+
+	// Calculate the factor
+	factor := uint64(65536)
+	factor += (195766423245049*frac + 971821376*(frac*frac) + 5127*(frac*frac*frac) + (1 << 47)) >> 48
+
+	// Calculate nextTarget
+	nextTarget := new(big.Int).Mul(refTarget, big.NewInt(int64(factor)))
+
+	// Adjust shifts
+	shifts -= 16
+	if shifts <= 0 {
+		nextTarget.Rsh(nextTarget, uint(-shifts))
+	} else {
+		// Check for overflow
+		nextTargetShifted := new(big.Int).Lsh(nextTarget, uint(shifts))
+		if nextTargetShifted.Rsh(nextTargetShifted, uint(shifts)).Cmp(nextTarget) != 0 {
+			// Overflow occurred, set to powLimit
+			nextTarget.Set(powLimit)
+		} else {
+			nextTarget.Set(nextTargetShifted)
+		}
+	}
+
+	// Ensure nextTarget is at least 1 and at most powLimit
+	if nextTarget.Sign() == 0 {
+		nextTarget.SetInt64(1)
+	} else if nextTarget.Cmp(powLimit) > 0 {
+		nextTarget.Set(powLimit)
+	}
+
+	return nextTarget
+}
+
+// GetNextASERTWorkRequired calculates the next required work
+func GetNextASERTWorkRequired(pindexPrev *blockNode, pindex *blockNode, chainParams *chaincfg.Params) uint32 {
+	return GetNextASERTWorkRequiredWithAnchor(pindexPrev, pindex, chainParams, GetASERTAnchorBlock(pindexPrev, chainParams))
+}
+
+// GetNextASERTWorkRequiredWithAnchor calculates the next required work with a given anchor block
+func GetNextASERTWorkRequiredWithAnchor(pindexPrev *blockNode, pindex *blockNode, chainParams *chaincfg.Params, pindexAnchorBlock *blockNode) uint32 {
+	// This cannot handle the genesis block and early blocks in general.
+	if pindexPrev == nil {
+		panic("pindexPrev is nil")
+	}
+
+	// Anchor block is the block on which all ASERT scheduling calculations are based.
+	// It too must exist, and it must have a valid parent.
+	if pindexAnchorBlock == nil {
+		panic("pindexAnchorBlock is nil")
+	}
+
+	// We make no further assumptions other than the height of the prev block
+	// must be >= that of the anchor block.
+	if int32(pindexPrev.Height()) < int32(pindexAnchorBlock.Height()) {
+		panic("pindexPrev.Height < pindexAnchorBlock.Height")
+	}
+
+	powLimit := chainParams.PowLimit
+
+	// For nTimeDiff calculation, use the parent of the anchor block timestamp.
+	var anchorTime int64
+	if pindexAnchorBlock.parent != nil {
+		anchorTime = pindexAnchorBlock.parent.timestamp
+	} else {
+		anchorTime = pindexAnchorBlock.timestamp
+	}
+
+	nTimeDiff := pindex.timestamp - anchorTime
+
+	// Height difference is from current block to anchor block
+	nHeightDiff := pindexPrev.height - pindexAnchorBlock.height -
+		(pindexPrev.heightStake - pindexAnchorBlock.heightStake)
+
+	// Convert nBits to big.Int
+	refBlockTarget := CompactToBig(pindexAnchorBlock.bits)
+
+	// Do the actual target adaptation calculation in CalculateASERT function
+	nextTarget := CalculateASERT(
+		refBlockTarget,
+		powLimit,
+		StakeTargetSpacing*6,
+		nTimeDiff,
+		int64(nHeightDiff),
+		nDAAHalfLife,
+	)
+
+	// Convert back to compact representation
+	return BigToCompact(nextTarget)
+}
+
+// GetASERTAnchorBlock finds the appropriate anchor block for ASERT calculations
+func GetASERTAnchorBlock(pindex *blockNode, chainParams *chaincfg.Params) *blockNode {
+	cachedValue := cachedAnchor.Load()
+	if cachedValue != nil {
+		if lastCached, ok := cachedValue.(*blockNode); ok {
+			if pindex.Ancestor(lastCached.height) == lastCached {
+				return lastCached
+			}
+		}
+	}
+
+	anchor := pindex
+	for anchor.parent != nil {
+		if !IsProtocolV14(chainParams, anchor.parent) && !anchor.IsProofOfStake() {
+			break
+		}
+		anchor = anchor.parent
+	}
+
+	cachedAnchor.Store(anchor)
+	return anchor
+}
+
 // calcNextRequiredDifficulty calculates the required difficulty for the block
 // after the passed previous block node based on the difficulty retarget rules.
 // This function differs from the exported CalcNextRequiredDifficulty in that
@@ -111,6 +261,13 @@ func calcNextRequiredDifficultyPPC(lastNode HeaderCtx, proofOfStake bool, c Chai
 	prevPrev := getLastBlockIndex(prevParent, proofOfStake)
 	if prevPrev.Hash().IsEqual(c.ChainParams().GenesisHash) {
 		return c.ChainParams().InitialHashTargetBits, nil // second block
+	}
+
+	if !proofOfStake && IsProtocolV14(c.ChainParams(), prev) {
+		prevNodeTmp := c.index.LookupNode(prev.Hash())
+		lastNodeTmp := c.index.LookupNode(lastNode.Hash())
+
+		return GetNextASERTWorkRequired(prevNodeTmp, lastNodeTmp, c.ChainParams()), nil
 	}
 
 	actualSpacing := prev.Timestamp() - prevPrev.Timestamp()
@@ -478,7 +635,6 @@ func bigToShaHash(value *big.Int) (*chainhash.Hash, error) {
 
 	return chainhash.NewHash(pbuf)
 }
-
 
 // PPCGetLastProofOfWorkReward
 // Export required, used in ppcwallet CreateCoinStake method

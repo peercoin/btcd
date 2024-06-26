@@ -51,6 +51,9 @@ const (
 	// Protocol switch time for v12 kernel protocol
 	nProtocolV12SwitchTime     int64 = 1681732800 // Mon 17 Apr 12:00:00 UTC 2023
 	nProtocolV12TestSwitchTime int64 = 1669636800 // Mon 28 Nov 12:00:00 UTC 2022
+	// Protocol switch time for v14 kernel protocol
+	nProtocolV14SwitchTime     int64 = 1717416000 // Mon  3 Jun 12:00:00 UTC 2024
+	nProtocolV14TestSwitchTime int64 = 1710720000 // Mon 18 Mar 00:00:00 UTC 2024
 )
 
 /*
@@ -218,12 +221,36 @@ func IsProtocolV12(chainParams *chaincfg.Params, pindexPrev HeaderCtx) bool {
 		return false
 	}
 
-	// if 900 of the last 1,000 blocks are version 2 or greater (90/100 if testnet):
+	// if 900 of the last 1,000 blocks are version 4 or greater (90/100 if testnet):
 	// Soft-forking PoS can be dangerous if the super majority is too low
 	// The stake majority will decrease after the fork
 	// since only coindays of updated nodes will get destroyed.
 	if (chainParams == &chaincfg.MainNetParams && IsSuperMajority(4, pindexPrev, 900, 1000)) ||
 		(chainParams != &chaincfg.MainNetParams && IsSuperMajority(4, pindexPrev, 90, 100)) {
+		return true
+	}
+
+	return false
+}
+
+func IsProtocolV14(chainParams *chaincfg.Params, pindexPrev HeaderCtx) bool {
+	// todo ppc couple of spots missing this check
+	var switchTime int64
+	if chainParams == &chaincfg.TestNet3Params {
+		switchTime = nProtocolV14TestSwitchTime
+	} else {
+		switchTime = nProtocolV14SwitchTime
+	}
+	if pindexPrev.Timestamp() < switchTime {
+		return false
+	}
+
+	// if 750 of the last 1,000 blocks are version 5 or greater (90/100 if testnet):
+	// Soft-forking PoS can be dangerous if the super majority is too low
+	// The stake majority will decrease after the fork
+	// since only coindays of updated nodes will get destroyed.
+	if (chainParams == &chaincfg.MainNetParams && IsSuperMajority(5, pindexPrev, 750, 1000)) ||
+		(chainParams != &chaincfg.MainNetParams && IsSuperMajority(5, pindexPrev, 75, 100)) {
 		return true
 	}
 

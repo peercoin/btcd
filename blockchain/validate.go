@@ -699,7 +699,7 @@ func compareScript(height int32, script []byte) error {
 // NOTE: Ignore the above lock requirement if this function is not passed a
 // *Blockchain instance as the ChainCtx argument.
 func CheckBlockHeaderContext(header *wire.BlockHeader, prevNode HeaderCtx,
-	flags BehaviorFlags, c ChainCtx, skipCheckpoint bool) error {
+	flags BehaviorFlags, c *BlockChain, skipCheckpoint bool) error {
 
 	fastAdd := flags&BFFastAdd == BFFastAdd
 	if !fastAdd {

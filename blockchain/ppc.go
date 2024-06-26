@@ -247,7 +247,7 @@ func GetASERTAnchorBlock(pindex *blockNode, chainParams *chaincfg.Params) *block
 // the exported version uses the current best chain as the previous block node
 // while this function accepts any block node.
 // Peercoin https://github.com/ppcoin/ppcoin/blob/v0.4.0ppc/src/main.cpp#L902
-func calcNextRequiredDifficultyPPC(lastNode HeaderCtx, proofOfStake bool, c ChainCtx) (uint32, error) {
+func calcNextRequiredDifficultyPPC(lastNode HeaderCtx, proofOfStake bool, c *BlockChain) (uint32, error) {
 
 	if lastNode == nil {
 		return c.ChainParams().PowLimitBits, nil // genesis block
